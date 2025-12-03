@@ -677,12 +677,12 @@ namespace compiler_prog
                 return false;
             }
 
-            string t1 = stackCheckContVir.Pop();
-            string t2 = stackCheckContVir.Pop();
+            string t2 = stackCheckContVir.Pop(); // тип выражения (правой части)
+            string t1 = stackCheckContVir.Pop(); // тип идентификатора (левой части)
 
-            _fileWork.WriteFile($"LetEquale: t1={t1}, t2={t2}, equal={t1 == t2}");
+            _fileWork.WriteFile($"LetEquale: t1(ID)={t1}, t2(expression)={t2}, equal={t1 == t2}");
 
-            return t1 == t2;
+            return t1 == t2; // Типы должны совпадать
         }
 
         private bool BoolEquale()
@@ -705,44 +705,65 @@ namespace compiler_prog
         // ПОЛИЗ функции
         void putPolizeLex(PolizStruct lex)
         {
-            OutputPoliz[free++] = lex;
+            OutputPoliz[free] = lex;
+
+            // Логируем что добавляем
+            string logMsg = $"POLIZ[{free}]: ";
+            if (lex.classValue == 0) // метка
+                logMsg += $"Label L{lex.value}";
+            else if (lex.classValue == 2) // операция
+                logMsg += $"Operation '{lex.type}'";
+            else if (lex.classValue == 3) // константа
+                logMsg += $"Constant '{lex.type}'";
+            else if (lex.classValue == 4) // идентификатор
+                logMsg += $"Variable '{lex.type}'";
+            else if (lex.classValue == 5) // особый случай
+                logMsg += $"Special '{lex.type}'";
+
+            _fileWork.WriteFile(logMsg);
+            free++;
         }
 
         PolizStruct putOperationLex(string oper)
         {
-            PolizStruct temp;
-            int counter = 0;
-            int dopCount = parentObj.Separators.Count - 1;
-            if (oper == "!E")
+            PolizStruct temp = new PolizStruct();
+
+            if (oper == "!F")
             {
-                counter = 20;
+                temp.type = "!F";
+                temp.classValue = 2;
+                temp.value = 20;
             }
             else if (oper == "!")
             {
-                counter = 21;
+                temp.type = "!";
+                temp.classValue = 2;
+                temp.value = 21;
             }
             else if (oper == "R")
             {
-                counter = 22;
+                temp.type = "R";
+                temp.classValue = 2;
+                temp.value = 22;
             }
             else if (oper == "W")
             {
-                counter = 23;
+                temp.type = "W";
+                temp.classValue = 2;
+                temp.value = 23;
             }
             else
             {
+                int counter = 0;
                 foreach (string s in parentObj.Separators)
                 {
-                    if (s == oper)
-                    {
-                        break;
-                    }
+                    if (s == oper) break;
                     counter++;
                 }
+                temp.type = oper;
+                temp.classValue = 2;
+                temp.value = counter;
             }
-            temp.type = oper;
-            temp.classValue = 2;
-            temp.value = counter;
             return temp;
         }
 
@@ -756,14 +777,15 @@ namespace compiler_prog
         PolizStruct makePolizeLabel(int k)
         {
             PolizStruct temp;
-            temp.classValue = 0;
+            temp.classValue = 0; // 0 означает метку
             temp.value = k;
-            temp.type = k.ToString();
+            temp.type = "L" + k.ToString();
+            _fileWork.WriteFile($"Created label L{k} for POLIZ position {k}");
             return temp;
         }
 
         // ГРАММАТИКА
-       
+
 
         private int DESC()
         {
@@ -994,39 +1016,58 @@ namespace compiler_prog
             // 3. Проверяем объявление
             if (currentIDIndex >= TID_temp.Count || !TID_temp[currentIDIndex].isDeclared)
             {
+                _fileWork.WriteFile($"LET ERROR: ID '{currentID}' not declared or out of range");
                 return 102;
             }
 
             string idType = TID_temp[currentIDIndex].type;
+
+            // 4. ОЧИЩАЕМ стек и ДОБАВЛЯЕМ тип ID
             stackCheckContVir.Clear();
             stackCheckContVir.Push(idType);
+            _fileWork.WriteFile($"LET: Pushed ID type '{idType}' to stack");
 
-            // 6. СОЗДАЕМ POLIZ запись для идентификатора СРАЗУ (для простого присваивания)
-            temp.classValue = 4;
+            // 5. СОЗДАЕМ POLIZ запись для идентификатора (но НЕ добавляем сейчас!)
+            temp.classValue = currentLex.numTable;
             temp.value = currentIDIndex;
             temp.type = currentID;
-            putPolizeLex5(temp);  // <-- ЗДЕСЬ!
+            // НЕ ВЫЗЫВАЕМ putPolizeLex(temp) здесь!
 
             GetCurrentLexem();
 
-            // 7. Проверяем 'ass'
-            if (currentLexValue != "ass") return 10;
+            // 6. Проверяем 'ass'
+            if (currentLexValue != "ass")
+            {
+                _fileWork.WriteFile($"LET ERROR: Expected 'ass', but got: '{currentLexValue}'");
+                return 10;
+            }
+            _fileWork.WriteFile("LET -> ass");
             GetCurrentLexem();
 
-            // 8. Обрабатываем выражение
+            // 7. Обрабатываем выражение (оно добавится в ПОЛИЗ первым)
             code = VIR();
             if (code != 0) return code;
 
-            // 9. Проверяем типы
-            if (!LetEquale()) return 103;
+            // 8. Проверяем типы - теперь в стеке должно быть: тип_выражения, тип_ID
+            if (!LetEquale())
+            {
+                _fileWork.WriteFile($"LET ERROR: Type mismatch in assignment");
+                return 103;
+            }
+
+            // 9. ТЕПЕРЬ добавляем идентификатор в ПОЛИЗ (после выражения)
+            putPolizeLex(temp);
+            _fileWork.WriteFile($"LET: Added ID '{currentID}' to POLIZ after expression");
 
             // 10. Добавляем операцию присваивания
             putPolizeLex(putOperationLex("="));
+            _fileWork.WriteFile($"LET: Added assignment operation");
 
             // 11. Проверяем разделитель
             if (currentLexValue == ";")
             {
                 GetCurrentLexem();
+                _fileWork.WriteFile("LET: Skipping ';'");
             }
 
             _fileWork.WriteFile($"=== LET SUCCESS ===");
@@ -1105,28 +1146,23 @@ namespace compiler_prog
 
             return 0;
         }
-
         private int FIXLO()
         {
-            int m5, m6;
+            int falseJumpPos;
             int code;
 
             _fileWork.WriteFile(TempPath + "FIXLO -> for ");
             temp_for = TempPath;
             GetCurrentLexem();
 
-            // ФИКС: В цикле for первое присваивание не должно заканчиваться на ;
-            // Сохраняем текущее состояние для обработки присваивания без ;
             string savedTempPath = TempPath;
             TempPath = temp_for + "FIXLO -> LET ";
 
             code = LET();
             if (code != 0) return code;
 
-            // ФИКС: После LET в for может быть 'to', а не ';'
             _fileWork.WriteFile($"FIXLO: After first LET, currentLexValue = '{currentLexValue}'");
 
-            // Восстанавливаем TempPath
             TempPath = temp_for;
 
             if (currentLexValue != "to")
@@ -1137,20 +1173,57 @@ namespace compiler_prog
             _fileWork.WriteFile(TempPath + "FIXLO -> to ");
             GetCurrentLexem();
 
-            m5 = free++;
+            // Сохраняем позицию начала проверки условия
+            int loopStartLabel = free; // Это позиция, куда нужно вернуться
+            _fileWork.WriteFile($"FIXLO: Loop start label at position {loopStartLabel}");
+
+            // Сначала добавляем переменную i для сравнения
+            int iIndex = -1;
+            for (int i = 0; i < TID_temp.Count; i++)
+            {
+                if (TID_temp[i].value == "i")
+                {
+                    iIndex = i;
+                    break;
+                }
+            }
+
+            if (iIndex == -1) return 115;
+
+            PolizStruct tempVarI;
+            tempVarI.classValue = 4; // TID
+            tempVarI.value = iIndex;
+            tempVarI.type = "i";
+            putPolizeLex(tempVarI);
+            _fileWork.WriteFile($"FIXLO: Added variable i at position {free - 1}");
+
+            // Обрабатываем верхнюю границу
             code = VIR();
             if (code != 0) return code;
 
-            if (!BoolEquale())
-            {
-                return 105;
-            }
+            if (stackCheckContVir.Count == 0) return 105;
+            string exprType = stackCheckContVir.Pop();
+            if (exprType != "%" && exprType != "!") return 105;
 
-            m6 = free++;
-            putPolizeLex(putOperationLex("!F"));
+            putPolizeLex(putOperationLex("LE"));
+            _fileWork.WriteFile($"FIXLO: Added LE operation at position {free - 1}");
+
+            // Условный переход - ВАЖНО: нужно добавить операцию !F
+            falseJumpPos = free;
+
+            // Создаем операцию !F
+            PolizStruct tempJump = new PolizStruct();
+            tempJump.type = "!F";
+            tempJump.classValue = 2;
+            tempJump.value = 0; // Временное значение
+
+            // Добавляем в ПОЛИЗ
+            putPolizeLex(tempJump);
+            _fileWork.WriteFile($"FIXLO: Added !F operation at position {falseJumpPos}");
 
             if (currentLexValue != "do")
             {
+                _fileWork.WriteFile($"FIXLO ERROR: Expected 'do', but got: '{currentLexValue}'");
                 return 15;
             }
             _fileWork.WriteFile(TempPath + "FIXLO -> do");
@@ -1159,9 +1232,46 @@ namespace compiler_prog
             code = OPER();
             if (code != 0) return code;
 
-            OutputPoliz[free++] = makePolizeLabel(m5);
-            putPolizeLex(putOperationLex("!"));
-            OutputPoliz[m6] = makePolizeLabel(free++);
+            // Инкремент i := i + 1
+            putPolizeLex(tempVarI);
+            _fileWork.WriteFile($"FIXLO: Added variable i for increment at position {free - 1}");
+
+            PolizStruct tempOne;
+            tempOne.classValue = 3;
+            int constOneIndex = parentObj.Constants.IndexOf("1");
+            if (constOneIndex == -1)
+            {
+                parentObj.Constants.Add("1");
+                constOneIndex = parentObj.Constants.Count - 1;
+            }
+            tempOne.value = constOneIndex;
+            tempOne.type = "1";
+            putPolizeLex(tempOne);
+            _fileWork.WriteFile($"FIXLO: Added constant 1 at position {free - 1}");
+
+            putPolizeLex(putOperationLex("plus"));
+            _fileWork.WriteFile($"FIXLO: Added plus operation at position {free - 1}");
+
+            putPolizeLex(tempVarI);
+            _fileWork.WriteFile($"FIXLO: Added variable i for assignment at position {free - 1}");
+
+            putPolizeLex(putOperationLex("="));
+            _fileWork.WriteFile($"FIXLO: Added = operation at position {free - 1}");
+
+            // Безусловный переход к началу цикла
+            int backJumpPos = free;
+            PolizStruct tempBackJump = new PolizStruct();
+            tempBackJump.type = "!";
+            tempBackJump.classValue = 2;
+            tempBackJump.value = loopStartLabel; // Прыжок к началу проверки
+
+            putPolizeLex(tempBackJump);
+            _fileWork.WriteFile($"FIXLO: Added ! operation at position {backJumpPos} to jump to L{loopStartLabel}");
+
+            // Устанавливаем цель перехода для !F (выход из цикла)
+            OutputPoliz[falseJumpPos].value = free;
+            _fileWork.WriteFile($"FIXLO: Set !F at position {falseJumpPos} to jump to L{free}");
+
             return 0;
         }
 
@@ -1178,6 +1288,7 @@ namespace compiler_prog
             code = VIR();
             if (code != 0) return code;
 
+            // ФИКС: Используем BoolEquale() - для while выражение ДОЛЖНО быть логическим
             if (!BoolEquale())
             {
                 return 106;
@@ -1193,9 +1304,7 @@ namespace compiler_prog
                 return 16;
             }
 
-            // ФИКС: Добавляем отладочную информацию перед вызовом OPER
-            _fileWork.WriteFile($"IFLO: Before OPER call, currentLexValue = '{currentLexValue}'");
-            GetCurrentLexem(); // Переходим после 'do'
+            GetCurrentLexem();
             _fileWork.WriteFile($"IFLO: After 'do', currentLexValue = '{currentLexValue}'");
 
             code = OPER();
@@ -1336,27 +1445,39 @@ namespace compiler_prog
             {
                 _fileWork.WriteFile(TempPath + "VIR1 -> " + currentLexValue + " ");
 
-                // ФИКС: Сохраняем операцию в стек
-                stackCheckContVir.Push(currentLexValue);
-                _fileWork.WriteFile($"VIR1: Operation '{currentLexValue}' pushed to stack");
+                // Сохраняем операцию
+                string operation = currentLexValue;
 
                 GetCurrentLexem();
 
-                // ФИКС: Добавляем отладочную информацию о состоянии стека
-                _fileWork.WriteFile($"VIR1: Stack before VIR = [{string.Join(", ", stackCheckContVir)}]");
-
+                // Обрабатываем правый операнд
                 code = VIR();
                 if (code != 0) return code;
 
-                // ФИКС: Добавляем отладочную информацию перед проверкой операции
-                _fileWork.WriteFile($"VIR1: Stack before CheckOperation = [{string.Join(", ", stackCheckContVir)}]");
-
-                if (!CheckOperation())
+                // Проверяем операцию сравнения
+                if (stackCheckContVir.Count < 2)
                 {
-                    _fileWork.WriteFile($"VIR1 ERROR: CheckOperation failed for '{currentLexValue}'");
+                    _fileWork.WriteFile($"VIR1 ERROR: Not enough operands for '{operation}'");
                     return 110;
                 }
-                return 0;
+
+                string t2 = stackCheckContVir.Pop();  // правый операнд
+                string t1 = stackCheckContVir.Pop();  // левый операнд
+                string res = GetType(operation, t1, t2);
+
+                _fileWork.WriteFile($"VIR1: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
+
+                if (res != string.Empty)
+                {
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                    return 0;
+                }
+                else
+                {
+                    _fileWork.WriteFile($"VIR1 ERROR: CheckOperation failed for '{operation}'");
+                    return 110;
+                }
             }
             return 0;
         }
@@ -1369,15 +1490,16 @@ namespace compiler_prog
                 return false;
             }
 
-            // БЫЛО: t2, op, t1
-            // СТАЛО: op, t1, t2
-            string op = stackCheckContVir.Pop();
-            string t1 = stackCheckContVir.Pop();
-            string t2 = stackCheckContVir.Pop();
+            // ВАЖНО: Для правильной работы нужен порядок: t2, t1, op
+            // Потому что операции добавляются в стек ПОСЛЕ операндов
+
+            string t2 = stackCheckContVir.Pop();  // правый операнд
+            string t1 = stackCheckContVir.Pop();  // левый операнд
+            string op = stackCheckContVir.Pop();  // операция
 
             string res = GetType(op, t1, t2);
 
-            _fileWork.WriteFile($"CheckOperation: op={op}, t1={t1}, t2={t2}, result={res}");
+            _fileWork.WriteFile($"CheckOperation: t1={t1}, op={op}, t2={t2}, result={res}");
 
             if (res != string.Empty)
             {
@@ -1390,7 +1512,6 @@ namespace compiler_prog
                 return false;
             }
         }
-
         private int OPRD()
         {
             int code;
@@ -1412,27 +1533,28 @@ namespace compiler_prog
                 code = SLAG();
                 if (code != 0) return code;
 
-                // ВАЖНО: Добавляем операцию в стек ПОСЛЕ обработки правого операнда
-                // Но в правильном порядке для CheckOperation: t2, t1, op
+                // **ВАЖНО: Операция добавляется ПОСЛЕ обработки правого операнда**
+                // Но тип операции нужно проверить СЕЙЧАС
                 if (stackCheckContVir.Count < 2)
                 {
                     _fileWork.WriteFile($"OPRD ERROR: Not enough operands for '{operation}'");
                     return 111;
                 }
 
-                // Правильный порядок для CheckOperation: op, t1, t2
-                // Но нам нужно: t2, t1, op (чтобы CheckOperation видел op, t1, t2)
-                string t2 = stackCheckContVir.Pop();
-                string t1 = stackCheckContVir.Pop();
+                string t2 = stackCheckContVir.Pop();  // правый операнд
+                string t1 = stackCheckContVir.Pop();  // левый операнд
+                string res = GetType(operation, t1, t2);
 
-                // Временно возвращаем типы
-                stackCheckContVir.Push(t1);
-                stackCheckContVir.Push(t2);
-                stackCheckContVir.Push(operation);
+                _fileWork.WriteFile($"OPRD: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
 
-                if (!CheckOperation())
+                if (res != string.Empty)
                 {
-                    _fileWork.WriteFile($"OPRD ERROR: CheckOperation failed for '{operation}'");
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    _fileWork.WriteFile($"OPRD ERROR: Type mismatch for '{operation}' between {t1} and {t2}");
                     return 111;
                 }
 
@@ -1464,25 +1586,28 @@ namespace compiler_prog
                 code = MNOJ();
                 if (code != 0) return code;
 
-                // ВАЖНО: Добавляем операцию в стек ПОСЛЕ обработки правого операнда
+                // **ВАЖНО: Операция добавляется ПОСЛЕ обработки правого операнда**
+                // Но тип операции нужно проверить СЕЙЧАС
                 if (stackCheckContVir.Count < 2)
                 {
                     _fileWork.WriteFile($"SLAG ERROR: Not enough operands for '{operation}'");
                     return 112;
                 }
 
-                // Правильный порядок для CheckOperation: op, t1, t2
-                // Но нам нужно: t2, t1, op
-                string t2 = stackCheckContVir.Pop();
-                string t1 = stackCheckContVir.Pop();
+                string t2 = stackCheckContVir.Pop();  // правый операнд
+                string t1 = stackCheckContVir.Pop();  // левый операнд
+                string res = GetType(operation, t1, t2);
 
-                stackCheckContVir.Push(t1);
-                stackCheckContVir.Push(t2);
-                stackCheckContVir.Push(operation);
+                _fileWork.WriteFile($"SLAG: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
 
-                if (!CheckOperation())
+                if (res != string.Empty)
                 {
-                    _fileWork.WriteFile($"SLAG ERROR: CheckOperation failed for '{operation}'");
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    _fileWork.WriteFile($"SLAG ERROR: Type mismatch for '{operation}' between {t1} and {t2}");
                     return 112;
                 }
 
