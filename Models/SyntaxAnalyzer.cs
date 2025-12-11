@@ -13,8 +13,10 @@ namespace compiler_prog
     {
         StartNotWithProgram = 0,
     }
+
     public class SyntaxAnalyzer
     {
+        private CodeGenerator _codeGenerator;
         private FileWork _fileWork;
 
         private LexemStruct currentLex;
@@ -193,6 +195,14 @@ namespace compiler_prog
             free = 0;
             _fileWork.CreateFile();
             answer = StartProgram();
+
+            if (answer == 0)
+            {
+                _codeGenerator = new CodeGenerator(this, TID_temp, parentObj.Constants, OutputPoliz, free);
+                var generatedCode = _codeGenerator.GenerateCode();
+                SaveGeneratedCode(generatedCode);
+            }
+
             _fileWork.Close();
             return answer;
         }
@@ -1755,5 +1765,21 @@ namespace compiler_prog
                 return 23;
             }
         }
+
+        #region Генерация кода
+        private void SaveGeneratedCode(GeneratedCode generatedCode)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string outputPath = $"generated_code_{timestamp}.txt";
+                _codeGenerator.SaveToFile(outputPath);
+            }
+            catch (Exception ex)
+            {
+                _fileWork.WriteFile($"Ошибка сохранения кода: {ex.Message}");
+            }
+        }
+        #endregion
     }
 }

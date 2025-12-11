@@ -67,8 +67,10 @@
     <Compile Include="compiler.Designer.cs">
       <DependentUpon>compiler.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\CodeGenerator.cs" />
     <Compile Include="Models\CompilerData.cs" />
     <Compile Include="Models\FileWork.cs" />
+    <Compile Include="Models\GeneratedCode.cs" />
     <Compile Include="Models\Struct\LexemStruct.cs" />
     <Compile Include="Models\LexicalAnalyzer.cs" />
     <Compile Include="Models\Struct\PolizStruct.cs" />
