@@ -29,11 +29,6 @@
         private void InitializeComponent()
         {
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
-            this.selectFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startLexicalAnalyzerButton = new System.Windows.Forms.ToolStripMenuItem();
-            this.startSyntax = new System.Windows.Forms.ToolStripMenuItem();
-            this.выходToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBoxInputFile = new System.Windows.Forms.GroupBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -58,7 +53,9 @@
             this.statusLabel = new System.Windows.Forms.Label();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
             this.polizTextBox = new System.Windows.Forms.TextBox();
-            this.menuStrip1.SuspendLayout();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
             this.groupBoxInputFile.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -77,57 +74,10 @@
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
             // 
-            // menuStrip1
-            // 
-            this.menuStrip1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.selectFileToolStripMenuItem,
-            this.startLexicalAnalyzerButton,
-            this.startSyntax,
-            this.выходToolStripMenuItem});
-            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
-            this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(914, 24);
-            this.menuStrip1.TabIndex = 0;
-            this.menuStrip1.Text = "menuStrip1";
-            this.menuStrip1.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.menuStrip1_ItemClicked);
-            // 
-            // selectFileToolStripMenuItem
-            // 
-            this.selectFileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.ButtonFace;
-            this.selectFileToolStripMenuItem.Name = "selectFileToolStripMenuItem";
-            this.selectFileToolStripMenuItem.Size = new System.Drawing.Size(98, 20);
-            this.selectFileToolStripMenuItem.Text = "Открыть файл";
-            this.selectFileToolStripMenuItem.Click += new System.EventHandler(this.SelectFileToolStripMenuItem_Click);
-            // 
-            // startLexicalAnalyzerButton
-            // 
-            this.startLexicalAnalyzerButton.ForeColor = System.Drawing.SystemColors.ButtonFace;
-            this.startLexicalAnalyzerButton.Name = "startLexicalAnalyzerButton";
-            this.startLexicalAnalyzerButton.Size = new System.Drawing.Size(35, 20);
-            this.startLexicalAnalyzerButton.Text = "ЛА";
-            this.startLexicalAnalyzerButton.Click += new System.EventHandler(this.StartLexAnalyzer);
-            // 
-            // startSyntax
-            // 
-            this.startSyntax.ForeColor = System.Drawing.SystemColors.ButtonFace;
-            this.startSyntax.Name = "startSyntax";
-            this.startSyntax.Size = new System.Drawing.Size(61, 20);
-            this.startSyntax.Text = "ПОЛИЗ";
-            this.startSyntax.Click += new System.EventHandler(this.StartSyntaxClick);
-            // 
-            // выходToolStripMenuItem
-            // 
-            this.выходToolStripMenuItem.ForeColor = System.Drawing.SystemColors.ButtonFace;
-            this.выходToolStripMenuItem.Name = "выходToolStripMenuItem";
-            this.выходToolStripMenuItem.Size = new System.Drawing.Size(54, 20);
-            this.выходToolStripMenuItem.Text = "Выход";
-            this.выходToolStripMenuItem.Click += new System.EventHandler(this.exitApp);
-            // 
             // groupBoxInputFile
             // 
             this.groupBoxInputFile.Controls.Add(this.textBox1);
-            this.groupBoxInputFile.Location = new System.Drawing.Point(324, 300);
+            this.groupBoxInputFile.Location = new System.Drawing.Point(325, 285);
             this.groupBoxInputFile.Name = "groupBoxInputFile";
             this.groupBoxInputFile.Size = new System.Drawing.Size(369, 270);
             this.groupBoxInputFile.TabIndex = 1;
@@ -148,7 +98,7 @@
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.textBox2);
-            this.groupBox1.Location = new System.Drawing.Point(324, 27);
+            this.groupBox1.Location = new System.Drawing.Point(325, 12);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(369, 270);
             this.groupBox1.TabIndex = 2;
@@ -168,7 +118,7 @@
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.serviceGrid);
-            this.groupBox2.Location = new System.Drawing.Point(12, 27);
+            this.groupBox2.Location = new System.Drawing.Point(13, 12);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(150, 270);
             this.groupBox2.TabIndex = 4;
@@ -190,16 +140,17 @@
             this.col0,
             this.col1});
             this.serviceGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.serviceGrid.Location = new System.Drawing.Point(3, 16);
+            this.serviceGrid.Location = new System.Drawing.Point(3, 22);
             this.serviceGrid.MultiSelect = false;
             this.serviceGrid.Name = "serviceGrid";
             this.serviceGrid.ReadOnly = true;
             this.serviceGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             this.serviceGrid.RowHeadersVisible = false;
+            this.serviceGrid.RowHeadersWidth = 62;
             this.serviceGrid.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.serviceGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.serviceGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.serviceGrid.Size = new System.Drawing.Size(144, 251);
+            this.serviceGrid.Size = new System.Drawing.Size(144, 245);
             this.serviceGrid.TabIndex = 0;
             this.serviceGrid.TabStop = false;
             // 
@@ -216,6 +167,7 @@
             // 
             this.col1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.col1.HeaderText = "Символ";
+            this.col1.MinimumWidth = 8;
             this.col1.Name = "col1";
             this.col1.ReadOnly = true;
             this.col1.Width = 91;
@@ -223,7 +175,7 @@
             // groupBox3
             // 
             this.groupBox3.Controls.Add(this.separatorsGrid);
-            this.groupBox3.Location = new System.Drawing.Point(168, 27);
+            this.groupBox3.Location = new System.Drawing.Point(169, 12);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(150, 270);
             this.groupBox3.TabIndex = 5;
@@ -245,16 +197,17 @@
             this.dataGridViewTextBoxColumn1,
             this.dataGridViewTextBoxColumn2});
             this.separatorsGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.separatorsGrid.Location = new System.Drawing.Point(3, 16);
+            this.separatorsGrid.Location = new System.Drawing.Point(3, 22);
             this.separatorsGrid.MultiSelect = false;
             this.separatorsGrid.Name = "separatorsGrid";
             this.separatorsGrid.ReadOnly = true;
             this.separatorsGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             this.separatorsGrid.RowHeadersVisible = false;
+            this.separatorsGrid.RowHeadersWidth = 62;
             this.separatorsGrid.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.separatorsGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.separatorsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.separatorsGrid.Size = new System.Drawing.Size(144, 251);
+            this.separatorsGrid.Size = new System.Drawing.Size(144, 245);
             this.separatorsGrid.TabIndex = 1;
             this.separatorsGrid.TabStop = false;
             // 
@@ -271,6 +224,7 @@
             // 
             this.dataGridViewTextBoxColumn2.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.dataGridViewTextBoxColumn2.HeaderText = "Символ";
+            this.dataGridViewTextBoxColumn2.MinimumWidth = 8;
             this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
             this.dataGridViewTextBoxColumn2.ReadOnly = true;
             this.dataGridViewTextBoxColumn2.Width = 91;
@@ -278,7 +232,7 @@
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.constantsGrid);
-            this.groupBox4.Location = new System.Drawing.Point(12, 300);
+            this.groupBox4.Location = new System.Drawing.Point(13, 285);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(150, 270);
             this.groupBox4.TabIndex = 6;
@@ -300,16 +254,17 @@
             this.dataGridViewTextBoxColumn3,
             this.dataGridViewTextBoxColumn4});
             this.constantsGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.constantsGrid.Location = new System.Drawing.Point(3, 16);
+            this.constantsGrid.Location = new System.Drawing.Point(3, 22);
             this.constantsGrid.MultiSelect = false;
             this.constantsGrid.Name = "constantsGrid";
             this.constantsGrid.ReadOnly = true;
             this.constantsGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             this.constantsGrid.RowHeadersVisible = false;
+            this.constantsGrid.RowHeadersWidth = 62;
             this.constantsGrid.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.constantsGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.constantsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.constantsGrid.Size = new System.Drawing.Size(144, 251);
+            this.constantsGrid.Size = new System.Drawing.Size(144, 245);
             this.constantsGrid.TabIndex = 1;
             this.constantsGrid.TabStop = false;
             // 
@@ -326,6 +281,7 @@
             // 
             this.dataGridViewTextBoxColumn4.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.dataGridViewTextBoxColumn4.HeaderText = "Символ";
+            this.dataGridViewTextBoxColumn4.MinimumWidth = 8;
             this.dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
             this.dataGridViewTextBoxColumn4.ReadOnly = true;
             this.dataGridViewTextBoxColumn4.Width = 91;
@@ -333,7 +289,7 @@
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.indentGrid);
-            this.groupBox5.Location = new System.Drawing.Point(168, 300);
+            this.groupBox5.Location = new System.Drawing.Point(169, 285);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(150, 270);
             this.groupBox5.TabIndex = 7;
@@ -355,16 +311,17 @@
             this.dataGridViewTextBoxColumn5,
             this.dataGridViewTextBoxColumn6});
             this.indentGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.indentGrid.Location = new System.Drawing.Point(3, 16);
+            this.indentGrid.Location = new System.Drawing.Point(3, 22);
             this.indentGrid.MultiSelect = false;
             this.indentGrid.Name = "indentGrid";
             this.indentGrid.ReadOnly = true;
             this.indentGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             this.indentGrid.RowHeadersVisible = false;
+            this.indentGrid.RowHeadersWidth = 62;
             this.indentGrid.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.indentGrid.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.indentGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.indentGrid.Size = new System.Drawing.Size(144, 251);
+            this.indentGrid.Size = new System.Drawing.Size(144, 245);
             this.indentGrid.TabIndex = 1;
             this.indentGrid.TabStop = false;
             // 
@@ -381,6 +338,7 @@
             // 
             this.dataGridViewTextBoxColumn6.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.dataGridViewTextBoxColumn6.HeaderText = "Символ";
+            this.dataGridViewTextBoxColumn6.MinimumWidth = 8;
             this.dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
             this.dataGridViewTextBoxColumn6.ReadOnly = true;
             this.dataGridViewTextBoxColumn6.Width = 91;
@@ -388,12 +346,12 @@
             // statusBar
             // 
             this.statusBar.Controls.Add(this.statusLabel);
-            this.statusBar.Location = new System.Drawing.Point(12, 576);
+            this.statusBar.Location = new System.Drawing.Point(13, 561);
             this.statusBar.Name = "statusBar";
             this.statusBar.Size = new System.Drawing.Size(884, 73);
             this.statusBar.TabIndex = 8;
             this.statusBar.TabStop = false;
-            this.statusBar.Text = "Вывод программы";
+            this.statusBar.Text = "Статус программы";
             // 
             // statusLabel
             // 
@@ -402,13 +360,13 @@
             this.statusLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.statusLabel.Location = new System.Drawing.Point(6, 33);
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(0, 13);
+            this.statusLabel.Size = new System.Drawing.Size(0, 20);
             this.statusLabel.TabIndex = 0;
             // 
             // groupBox6
             // 
             this.groupBox6.Controls.Add(this.polizTextBox);
-            this.groupBox6.Location = new System.Drawing.Point(699, 27);
+            this.groupBox6.Location = new System.Drawing.Point(700, 12);
             this.groupBox6.Name = "groupBox6";
             this.groupBox6.Size = new System.Drawing.Size(197, 543);
             this.groupBox6.TabIndex = 9;
@@ -425,11 +383,44 @@
             this.polizTextBox.Size = new System.Drawing.Size(185, 521);
             this.polizTextBox.TabIndex = 1;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(18, 645);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(277, 30);
+            this.button1.TabIndex = 10;
+            this.button1.Text = "Открыть файл";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.SelectFileToolStripMenuItem_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(325, 645);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(259, 30);
+            this.button2.TabIndex = 11;
+            this.button2.Text = "ЛА";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.StartLexAnalyzer);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(632, 645);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(259, 30);
+            this.button3.TabIndex = 12;
+            this.button3.Text = "ПОЛИз";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.StartSyntaxClick);
+            // 
             // compiler
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.SystemColors.HighlightText;
-            this.ClientSize = new System.Drawing.Size(914, 661);
+            this.ClientSize = new System.Drawing.Size(914, 664);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.groupBox6);
             this.Controls.Add(this.statusBar);
             this.Controls.Add(this.groupBox5);
@@ -438,18 +429,14 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.groupBoxInputFile);
-            this.Controls.Add(this.menuStrip1);
-            this.MainMenuStrip = this.menuStrip1;
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(1280, 700);
+            this.MaximumSize = new System.Drawing.Size(1280, 720);
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(930, 700);
+            this.MinimumSize = new System.Drawing.Size(930, 720);
             this.Name = "compiler";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Транслятор программных языков рекурсивным спуском";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.lexicalAnalyzerForm_Closed);
-            this.menuStrip1.ResumeLayout(false);
-            this.menuStrip1.PerformLayout();
             this.groupBoxInputFile.ResumeLayout(false);
             this.groupBoxInputFile.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -467,7 +454,6 @@
             this.groupBox6.ResumeLayout(false);
             this.groupBox6.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -475,8 +461,6 @@
 
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.ToolStripMenuItem openFileToolStripMenuItem;
-        private System.Windows.Forms.MenuStrip menuStrip1;
-        private System.Windows.Forms.ToolStripMenuItem selectFileToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBoxInputFile;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox textBox2;
@@ -484,7 +468,6 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.GroupBox groupBox5;
-        private System.Windows.Forms.ToolStripMenuItem startLexicalAnalyzerButton;
         private System.Windows.Forms.GroupBox statusBar;
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.DataGridView serviceGrid;
@@ -499,10 +482,11 @@
         private System.Windows.Forms.DataGridView indentGrid;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
-        private System.Windows.Forms.ToolStripMenuItem startSyntax;
         private System.Windows.Forms.GroupBox groupBox6;
         private System.Windows.Forms.TextBox polizTextBox;
-        private System.Windows.Forms.ToolStripMenuItem выходToolStripMenuItem;
         private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button3;
     }
 }
