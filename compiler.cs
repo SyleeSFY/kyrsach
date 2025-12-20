@@ -110,20 +110,25 @@ namespace CompilerModelLang
                 answerInt = syntaxObj.SyntaxStart();
                 if (answerInt == 0)
                 {
-                    // Формирование окна ПОЛИЗ - ИСПРАВЛЕННАЯ ЧАСТЬ
-                    for (int i = 0; i < syntaxObj.free; i++)  // Используем free вместо Count()
+                    // Формирование окна ПОЛИЗ - ИСПРАВЛЕННАЯ ВЕРСИЯ
+                    // В цикле форматирования ПОЛИЗа
+                    for (int i = 0; i < syntaxObj.free; i++)
                     {
                         if (syntaxObj.OutputPoliz[i].classValue == 0) // метка
                         {
-                            resultString += $"L{syntaxObj.OutputPoliz[i].value} ";
+                            resultString += $"{syntaxObj.OutputPoliz[i].type} ";
                         }
                         else if (syntaxObj.OutputPoliz[i].classValue == 2) // операция
                         {
-                            resultString += $"{syntaxObj.OutputPoliz[i].type} ";
-                        }
-                        else if (syntaxObj.OutputPoliz[i].classValue == 5) // присваивание
-                        {
-                            resultString += $"{syntaxObj.OutputPoliz[i].type} ";
+                            if (syntaxObj.OutputPoliz[i].type == "УПЛ" ||
+                                syntaxObj.OutputPoliz[i].type == "БП")
+                            {
+                                resultString += $"{syntaxObj.OutputPoliz[i].type} m{syntaxObj.OutputPoliz[i].value} ";
+                            }
+                            else
+                            {
+                                resultString += $"{syntaxObj.OutputPoliz[i].type} ";
+                            }
                         }
                         else // идентификатор или константа
                         {
@@ -141,7 +146,6 @@ namespace CompilerModelLang
                 statusLabel.Text = "Синтаксический анализ: невозможно произвести анализ, лексический анализатор завершен с ошибкой.";
             }
         }
-
         private string ErrorHandler(int answer)
         {
             string predycat = null;

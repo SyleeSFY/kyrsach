@@ -16,6 +16,8 @@ namespace compiler_prog
 
     public class SyntaxAnalyzer
     {
+        private int labelCounter = 1;
+
         private CodeGenerator _codeGenerator;
         private FileWork _fileWork;
 
@@ -193,6 +195,7 @@ namespace compiler_prog
             TID_temp = parentObj.TID.ToList();
             Array.Clear(OutputPoliz, 0, OutputPoliz.Length);
             free = 0;
+            labelCounter = 1; // ДОБАВЬТЕ ЭТУ СТРОКУ - СБРОС СЧЕТЧИКА МЕТОК!
             _fileWork.CreateFile();
             answer = StartProgram();
 
@@ -738,17 +741,17 @@ namespace compiler_prog
         {
             PolizStruct temp = new PolizStruct();
 
-            if (oper == "!F")
+            if (oper == "!F" || oper == "УПЛ")
             {
-                temp.type = "!F";
+                temp.type = "УПЛ";
                 temp.classValue = 2;
-                temp.value = 20;
+                temp.value = 0; // БУДЕТ ЗАПОЛНЕНО ПОЗЖЕ
             }
-            else if (oper == "!")
+            else if (oper == "!" || oper == "БП")
             {
-                temp.type = "!";
+                temp.type = "БП";
                 temp.classValue = 2;
-                temp.value = 21;
+                temp.value = 0; // БУДЕТ ЗАПОЛНЕНО ПОЗЖЕ
             }
             else if (oper == "R")
             {
@@ -784,13 +787,29 @@ namespace compiler_prog
             OutputPoliz[free - 1].type = lex.type;
         }
 
-        PolizStruct makePolizeLabel(int k)
+        // Метод для создания меток m1:, m2:, m3: и т.д.
+        PolizStruct makePolizeLabel()
         {
-            PolizStruct temp;
+            PolizStruct temp = new PolizStruct();
             temp.classValue = 0; // 0 означает метку
-            temp.value = k;
-            temp.type = "L" + k.ToString();
-            _fileWork.WriteFile($"Created label L{k} for POLIZ position {k}");
+            temp.value = labelCounter; // номер метки (1, 2, 3...)
+            temp.type = $"m{labelCounter}:"; // формат m1:, m2:, m3:
+
+            int currentLabel = labelCounter; // запоминаем текущий номер
+            labelCounter++; // увеличиваем для следующей метки
+
+            _fileWork.WriteFile($"Created label m{currentLabel}:");
+            return temp;
+        }
+
+        // Вспомогательный метод для создания метки с заданным номером (для переходов)
+        PolizStruct makePolizeLabelWithNumber(int labelNumber)
+        {
+            PolizStruct temp = new PolizStruct();
+            temp.classValue = 0;
+            temp.value = labelNumber;
+            temp.type = $"m{labelNumber}:";
+            _fileWork.WriteFile($"Created label m{labelNumber}: for jump target");
             return temp;
         }
 
@@ -1087,7 +1106,7 @@ namespace compiler_prog
         private int IFEL()
         {
             int code;
-            int m1, m2;
+            int jumpFalsePos, jumpUncondPos;
 
             _fileWork.WriteFile(TempPath + "IFEL -> if ");
             temp_if = TempPath;
@@ -1102,8 +1121,15 @@ namespace compiler_prog
                 return 104;
             }
 
-            m1 = free++; // сохраняем адрес для !F (условный переход)
-            putPolizeLex(putOperationLex("!F"));
+            // Условный переход (если условие ложно - перейти к else)
+            jumpFalsePos = free;
+            int elseLabelNum = labelCounter; // номер метки для else
+
+            PolizStruct tempJumpFalse = new PolizStruct();
+            tempJumpFalse.type = "УПЛ";
+            tempJumpFalse.classValue = 2;
+            tempJumpFalse.value = elseLabelNum;
+            putPolizeLex(tempJumpFalse);
 
             if (currentLexValue != "then")
             {
@@ -1116,42 +1142,36 @@ namespace compiler_prog
             code = OPER();
             if (code != 0) return code;
 
-            m2 = free++; // сохраняем адрес для ! (безусловный переход)
-            putPolizeLex(putOperationLex("!"));
+            // Безусловный переход (после then - перейти после if-else)
+            jumpUncondPos = free;
+            int afterIfLabelNum = labelCounter + 1; // номер метки после if-else
 
-            // ОЧЕНЬ ВАЖНО: Сначала устанавливаем метку для !F
-            // !F должен перейти НА else-ветку (или после then, если else нет)
-            // В данный момент free указывает на следующую команду ПОСЛЕ !
-            OutputPoliz[m1] = makePolizeLabel(free);
+            PolizStruct tempJumpUncond = new PolizStruct();
+            tempJumpUncond.type = "БП";
+            tempJumpUncond.classValue = 2;
+            tempJumpUncond.value = afterIfLabelNum;
+            putPolizeLex(tempJumpUncond);
 
-            // ФИКС: После then-ветки проверяем наличие else
-            _fileWork.WriteFile($"IFEL: After then-branch, currentLexValue = '{currentLexValue}'");
-
-            // Если после then-ветки есть ;, пропускаем его
-            if (currentLexValue == ";")
-            {
-                _fileWork.WriteFile("IFEL: Skipping ';' after then-branch");
-                GetCurrentLexem();
-            }
-
-            // ФИКС: Теперь проверяем else сразу после then-ветки
+            // МЕТКА ELSE (но только если есть else)
             if (currentLexValue == "else")
             {
-                _fileWork.WriteFile(temp_if + "IFEL -> else ");
+                // Создаем метку для else
+                putPolizeLex(makePolizeLabel()); // создаст m{elseLabelNum}:
+
                 GetCurrentLexem();
 
                 TempPath = temp_if + "IFEL -> OPER ";
                 code = OPER();
                 if (code != 0) return code;
 
-                // Устанавливаем метку для ! (безусловного перехода)
-                // ! должен перейти ПОСЛЕ else-ветки
-                OutputPoliz[m2] = makePolizeLabel(free);
+                // МЕТКА ПОСЛЕ IF-ELSE
+                putPolizeLex(makePolizeLabel()); // создаст m{afterIfLabelNum}:
             }
             else
             {
-                // Если else нет, ! должен перейти на текущую позицию (после then)
-                OutputPoliz[m2] = makePolizeLabel(free);
+                // Если else нет, то afterIfLabelNum - это следующая метка
+                // Создаем метку после if (там будет выполнение после условия)
+                putPolizeLex(makePolizeLabel()); // создаст m{elseLabelNum}: но это будет метка после if
             }
 
             return 0;
@@ -1183,22 +1203,29 @@ namespace compiler_prog
             _fileWork.WriteFile(TempPath + "FIXLO -> to ");
             GetCurrentLexem();
 
-            // Сохраняем позицию начала проверки условия
-            int loopStartLabel = free; // Это позиция, куда нужно вернуться
-            _fileWork.WriteFile($"FIXLO: Loop start label at position {loopStartLabel}");
+            // СОЗДАЕМ МЕТКУ НАЧАЛА ЦИКЛА
+            int loopStartLabelNum = labelCounter; // запоминаем номер метки начала цикла
+            putPolizeLex(makePolizeLabel()); // добавляем метку m1: или m2: и т.д.
+
+            int loopStartPos = free - 1; // позиция метки в ПОЛИЗ
+            _fileWork.WriteFile($"FIXLO: Loop start label m{loopStartLabelNum} at position {loopStartPos}");
 
             // Сначала добавляем переменную i для сравнения
+            // Нужно найти индекс переменной i в TID_temp
             int iIndex = -1;
-            for (int i = 0; i < TID_temp.Count; i++)
+            for (int j = 0; j < TID_temp.Count; j++)
             {
-                if (TID_temp[i].value == "i")
+                if (TID_temp[j].value == currentLex.value)
                 {
-                    iIndex = i;
-                    break;
+                    // Это переменная для верхней границы
+                    iIndex = j - 1; // предполагаем что i - предыдущая переменная
                 }
             }
 
-            if (iIndex == -1) return 115;
+            if (iIndex == -1)
+            {
+                iIndex = 0; // fallback
+            }
 
             PolizStruct tempVarI;
             tempVarI.classValue = 4; // TID
@@ -1218,18 +1245,20 @@ namespace compiler_prog
             putPolizeLex(putOperationLex("LE"));
             _fileWork.WriteFile($"FIXLO: Added LE operation at position {free - 1}");
 
-            // Условный переход - ВАЖНО: нужно добавить операцию !F
-            falseJumpPos = free;
+            // Условный переход - создаем операцию УПЛ
+            falseJumpPos = free; // запоминаем позицию операции УПЛ
 
-            // Создаем операцию !F
+            // СОЗДАЕМ МЕТКУ ДЛЯ ВЫХОДА ИЗ ЦИКЛА
+            int exitLabelNum = labelCounter; // номер следующей метки (будет m2 или m3 и т.д.)
+
+            // Создаем операцию УПЛ
             PolizStruct tempJump = new PolizStruct();
-            tempJump.type = "!F";
+            tempJump.type = "УПЛ";
             tempJump.classValue = 2;
-            tempJump.value = 0; // Временное значение
+            tempJump.value = exitLabelNum; // перейти к метке выхода
 
-            // Добавляем в ПОЛИЗ
             putPolizeLex(tempJump);
-            _fileWork.WriteFile($"FIXLO: Added !F operation at position {falseJumpPos}");
+            _fileWork.WriteFile($"FIXLO: Added УПЛ operation at position {falseJumpPos} to jump to m{exitLabelNum}");
 
             if (currentLexValue != "do")
             {
@@ -1239,10 +1268,12 @@ namespace compiler_prog
             _fileWork.WriteFile(TempPath + "FIXLO -> do");
             GetCurrentLexem();
 
+            // Обрабатываем тело цикла
             code = OPER();
             if (code != 0) return code;
 
             // Инкремент i := i + 1
+            // Снова добавляем переменную i
             putPolizeLex(tempVarI);
             _fileWork.WriteFile($"FIXLO: Added variable i for increment at position {free - 1}");
 
@@ -1269,60 +1300,83 @@ namespace compiler_prog
             _fileWork.WriteFile($"FIXLO: Added = operation at position {free - 1}");
 
             // Безусловный переход к началу цикла
-            int backJumpPos = free;
             PolizStruct tempBackJump = new PolizStruct();
-            tempBackJump.type = "!";
+            tempBackJump.type = "БП";
             tempBackJump.classValue = 2;
-            tempBackJump.value = loopStartLabel; // Прыжок к началу проверки
+            tempBackJump.value = loopStartLabelNum; // Прыжок к метке начала
 
             putPolizeLex(tempBackJump);
-            _fileWork.WriteFile($"FIXLO: Added ! operation at position {backJumpPos} to jump to L{loopStartLabel}");
+            _fileWork.WriteFile($"FIXLO: Added БП operation at position {free - 1} to jump to m{loopStartLabelNum}");
 
-            // Устанавливаем цель перехода для !F (выход из цикла)
-            OutputPoliz[falseJumpPos].value = free;
-            _fileWork.WriteFile($"FIXLO: Set !F at position {falseJumpPos} to jump to L{free}");
+            // МЕТКА ВЫХОДА ИЗ ЦИКЛА
+            putPolizeLex(makePolizeLabel()); // m2: или следующая
+            _fileWork.WriteFile($"FIXLO: Added exit label m{exitLabelNum}");
 
             return 0;
         }
 
         private int IFLO()
         {
-            int m3, m4;
+            int jumpFalsePos;
             int code;
 
             _fileWork.WriteFile(TempPath + "IFLO -> while ");
             temp_while = TempPath;
             GetCurrentLexem();
 
-            m3 = free++;
-            code = VIR();
+            // МЕТКА НАЧАЛА ЦИКЛА
+            int loopStartLabelNum = labelCounter;
+            putPolizeLex(makePolizeLabel()); // m1:
+
+            code = VIR(); // обработка условия (i LE 5)
             if (code != 0) return code;
 
-            // ФИКС: Используем BoolEquale() - для while выражение ДОЛЖНО быть логическим
-            if (!BoolEquale())
-            {
-                return 106;
-            }
+            if (!BoolEquale()) return 106;
 
-            m4 = free++;
-            TempPath = temp_while;
-            _fileWork.WriteFile(TempPath + "IFLO -> do");
-            putPolizeLex(putOperationLex("!F"));
+            // Условный переход (если условие ложно - выйти из цикла)
+            jumpFalsePos = free;
+            int exitLabelNum = labelCounter; // следующая метка будет для выхода
 
-            if (currentLexValue != "do")
-            {
-                return 16;
-            }
+            PolizStruct tempJumpFalse = new PolizStruct();
+            tempJumpFalse.type = "УПЛ";
+            tempJumpFalse.classValue = 2;
+            tempJumpFalse.value = exitLabelNum;
+            putPolizeLex(tempJumpFalse);
+
+            if (currentLexValue != "do") return 16;
 
             GetCurrentLexem();
-            _fileWork.WriteFile($"IFLO: After 'do', currentLexValue = '{currentLexValue}'");
 
-            code = OPER();
-            if (code != 0) return code;
+            // ВАЖНО: Нужно обработать ВСЕ операторы до конца цикла
+            // Пока не встретим ключевое слово, обозначающее конец блока
+            while (currentLexValue != "end" && currentLexValue != "⟂" &&
+                   currentLexValue != "while" && currentLexValue != "for" &&
+                   currentLexValue != "if" && currentLexValue != "read" &&
+                   currentLexValue != "write")
+            {
+                _fileWork.WriteFile($"IFLO: Обрабатываем оператор внутри цикла: '{currentLexValue}'");
 
-            OutputPoliz[free++] = makePolizeLabel(m3);
-            putPolizeLex(putOperationLex("!"));
-            OutputPoliz[m4] = makePolizeLabel(free);
+                code = OPER(); // обрабатывает операторы внутри цикла
+                if (code != 0) return code;
+
+                // Если после оператора есть ;, пропускаем его
+                if (currentLexValue == ";")
+                {
+                    _fileWork.WriteFile("IFLO: Пропускаем ';'");
+                    GetCurrentLexem();
+                }
+            }
+
+            // Безусловный переход к началу цикла
+            PolizStruct tempJumpBack = new PolizStruct();
+            tempJumpBack.type = "БП";
+            tempJumpBack.classValue = 2;
+            tempJumpBack.value = loopStartLabelNum;
+            putPolizeLex(tempJumpBack);
+
+            // МЕТКА ВЫХОДА ИЗ ЦИКЛА
+            putPolizeLex(makePolizeLabel()); // m2:
+
             return 0;
         }
 
