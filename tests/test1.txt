@@ -1,0 +1,8 @@
+program
+a, b, c : %;
+begin
+  a ass 10
+  b ass 20
+  c ass a plus b
+  write(c)
+end.
