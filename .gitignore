@@ -10,3 +10,9 @@
 .vs/compiler/FileContentIndex/0d701a85-6ae2-45af-af45-18608fc3a68f.vsidx
 
 *.vsidx
+
+*.db
+
+*.db-shm
+
+*.db-wal

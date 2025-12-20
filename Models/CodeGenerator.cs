@@ -267,7 +267,7 @@ namespace compiler_prog
                 foreach (var v in _tid.Where(x => x.isDeclared))
                 {
                     string type = ConvertToCSharpType(v.type);
-                    sb.AppendLine("            " + type + " " + v.value + " = " + GetDefaultValue(type) + ";");
+                    sb.AppendLine("            " + type + " " + v.value + ";");
                 }
 
                 sb.AppendLine();

@@ -720,18 +720,20 @@ namespace compiler_prog
         {
             OutputPoliz[free] = lex;
 
-            // Логируем что добавляем
+            // Логируем с красивым форматированием
             string logMsg = $"POLIZ[{free}]: ";
             if (lex.classValue == 0) // метка
-                logMsg += $"Label L{lex.value}";
+                logMsg += $"Label m{lex.value}:";
+            else if (lex.classValue == 2 && lex.type == "УПЛ")
+                logMsg += $"УПЛ m{lex.value}";
+            else if (lex.classValue == 2 && lex.type == "БП")
+                logMsg += $"БП m{lex.value}";
             else if (lex.classValue == 2) // операция
                 logMsg += $"Operation '{lex.type}'";
             else if (lex.classValue == 3) // константа
                 logMsg += $"Constant '{lex.type}'";
             else if (lex.classValue == 4) // идентификатор
                 logMsg += $"Variable '{lex.type}'";
-            else if (lex.classValue == 5) // особый случай
-                logMsg += $"Special '{lex.type}'";
 
             _fileWork.WriteFile(logMsg);
             free++;
@@ -802,14 +804,15 @@ namespace compiler_prog
             return temp;
         }
 
-        // Вспомогательный метод для создания метки с заданным номером (для переходов)
         PolizStruct makePolizeLabelWithNumber(int labelNumber)
         {
             PolizStruct temp = new PolizStruct();
-            temp.classValue = 0;
+            temp.classValue = 0; // 0 - метка
             temp.value = labelNumber;
-            temp.type = $"m{labelNumber}:";
-            _fileWork.WriteFile($"Created label m{labelNumber}: for jump target");
+            temp.type = $"m{labelNumber}:"; // для отображения
+
+            // Но для ПОЛИЗа нужно сохранить числовое значение
+            _fileWork.WriteFile($"Created label m{labelNumber}: with value {labelNumber}");
             return temp;
         }
 
@@ -1183,12 +1186,12 @@ namespace compiler_prog
 
             _fileWork.WriteFile(TempPath + "FIXLO -> for ");
             temp_for = TempPath;
-            GetCurrentLexem();
+            GetCurrentLexem(); // пропускаем "for"
 
             string savedTempPath = TempPath;
             TempPath = temp_for + "FIXLO -> LET ";
 
-            code = LET();
+            code = LET(); // обработка i ass 1
             if (code != 0) return code;
 
             _fileWork.WriteFile($"FIXLO: After first LET, currentLexValue = '{currentLexValue}'");
@@ -1204,37 +1207,33 @@ namespace compiler_prog
             GetCurrentLexem();
 
             // СОЗДАЕМ МЕТКУ НАЧАЛА ЦИКЛА
-            int loopStartLabelNum = labelCounter; // запоминаем номер метки начала цикла
-            putPolizeLex(makePolizeLabel()); // добавляем метку m1: или m2: и т.д.
+            int loopStartLabelNum = labelCounter;
+            PolizStruct startLabel = makePolizeLabel();
+            putPolizeLex(startLabel); // добавляем метку m1:
 
-            int loopStartPos = free - 1; // позиция метки в ПОЛИЗ
+            int loopStartPos = free - 1;
             _fileWork.WriteFile($"FIXLO: Loop start label m{loopStartLabelNum} at position {loopStartPos}");
 
-            // Сначала добавляем переменную i для сравнения
-            // Нужно найти индекс переменной i в TID_temp
+            // Добавляем переменную i для сравнения
+            PolizStruct tempVarI;
+            tempVarI.classValue = 4; // TID
+                                     // Находим индекс переменной i в TID_temp
             int iIndex = -1;
             for (int j = 0; j < TID_temp.Count; j++)
             {
-                if (TID_temp[j].value == currentLex.value)
+                if (TID_temp[j].value == "i" || TID_temp[j].value.Contains("i"))
                 {
-                    // Это переменная для верхней границы
-                    iIndex = j - 1; // предполагаем что i - предыдущая переменная
+                    iIndex = j;
+                    break;
                 }
             }
-
-            if (iIndex == -1)
-            {
-                iIndex = 0; // fallback
-            }
-
-            PolizStruct tempVarI;
-            tempVarI.classValue = 4; // TID
+            if (iIndex == -1) iIndex = 0;
             tempVarI.value = iIndex;
             tempVarI.type = "i";
             putPolizeLex(tempVarI);
             _fileWork.WriteFile($"FIXLO: Added variable i at position {free - 1}");
 
-            // Обрабатываем верхнюю границу
+            // Обрабатываем верхнюю границу (выражение после "to")
             code = VIR();
             if (code != 0) return code;
 
@@ -1242,24 +1241,23 @@ namespace compiler_prog
             string exprType = stackCheckContVir.Pop();
             if (exprType != "%" && exprType != "!") return 105;
 
+            // Добавляем операцию сравнения (i <= верхняя_граница)
             putPolizeLex(putOperationLex("LE"));
             _fileWork.WriteFile($"FIXLO: Added LE operation at position {free - 1}");
 
-            // Условный переход - создаем операцию УПЛ
-            falseJumpPos = free; // запоминаем позицию операции УПЛ
+            // Условный переход если условие ЛОЖЬ (выход из цикла)
+            falseJumpPos = free;
+            int exitLabelNum = labelCounter; // следующая метка для выхода
 
-            // СОЗДАЕМ МЕТКУ ДЛЯ ВЫХОДА ИЗ ЦИКЛА
-            int exitLabelNum = labelCounter; // номер следующей метки (будет m2 или m3 и т.д.)
-
-            // Создаем операцию УПЛ
             PolizStruct tempJump = new PolizStruct();
             tempJump.type = "УПЛ";
             tempJump.classValue = 2;
-            tempJump.value = exitLabelNum; // перейти к метке выхода
+            tempJump.value = exitLabelNum;
 
             putPolizeLex(tempJump);
             _fileWork.WriteFile($"FIXLO: Added УПЛ operation at position {falseJumpPos} to jump to m{exitLabelNum}");
 
+            // Проверяем "do"
             if (currentLexValue != "do")
             {
                 _fileWork.WriteFile($"FIXLO ERROR: Expected 'do', but got: '{currentLexValue}'");
@@ -1268,16 +1266,42 @@ namespace compiler_prog
             _fileWork.WriteFile(TempPath + "FIXLO -> do");
             GetCurrentLexem();
 
-            // Обрабатываем тело цикла
+            // ВАЖНОЕ ИЗМЕНЕНИЕ: обрабатываем составной оператор
+            // Сохраняем позицию перед телом цикла для вычисления адресов
+            int beforeLoopBodyPos = free;
+
+            // Обрабатываем ТЕЛО ЦИКЛА как составной оператор
+            // Сначала обрабатываем первый оператор
             code = OPER();
             if (code != 0) return code;
+
+            // Затем обрабатываем дополнительные операторы с @
+            while (currentLexValue == "@")
+            {
+                _fileWork.WriteFile("FIXLO: Found @ for compound statement");
+                GetCurrentLexem(); // пропускаем @
+
+                // Обрабатываем следующий оператор
+                code = OPER();
+                if (code != 0) return code;
+
+                // Проверяем разделитель
+                if (currentLexValue == ";")
+                {
+                    _fileWork.WriteFile("FIXLO: Skipping ; after @ operator");
+                    GetCurrentLexem();
+                }
+            }
+
+            // ФИКС: После обработки тела цикла нужно вернуться к вычислению инкремента
 
             // Инкремент i := i + 1
             // Снова добавляем переменную i
             putPolizeLex(tempVarI);
             _fileWork.WriteFile($"FIXLO: Added variable i for increment at position {free - 1}");
 
-            PolizStruct tempOne;
+            // Константа 1
+            PolizStruct tempOne = new PolizStruct();
             tempOne.classValue = 3;
             int constOneIndex = parentObj.Constants.IndexOf("1");
             if (constOneIndex == -1)
@@ -1290,9 +1314,11 @@ namespace compiler_prog
             putPolizeLex(tempOne);
             _fileWork.WriteFile($"FIXLO: Added constant 1 at position {free - 1}");
 
+            // Операция сложения
             putPolizeLex(putOperationLex("plus"));
             _fileWork.WriteFile($"FIXLO: Added plus operation at position {free - 1}");
 
+            // Присваивание результата обратно в i
             putPolizeLex(tempVarI);
             _fileWork.WriteFile($"FIXLO: Added variable i for assignment at position {free - 1}");
 
@@ -1303,13 +1329,14 @@ namespace compiler_prog
             PolizStruct tempBackJump = new PolizStruct();
             tempBackJump.type = "БП";
             tempBackJump.classValue = 2;
-            tempBackJump.value = loopStartLabelNum; // Прыжок к метке начала
+            tempBackJump.value = loopStartLabelNum;
 
             putPolizeLex(tempBackJump);
             _fileWork.WriteFile($"FIXLO: Added БП operation at position {free - 1} to jump to m{loopStartLabelNum}");
 
             // МЕТКА ВЫХОДА ИЗ ЦИКЛА
-            putPolizeLex(makePolizeLabel()); // m2: или следующая
+            PolizStruct exitLabel = makePolizeLabelWithNumber(exitLabelNum);
+            putPolizeLex(exitLabel);
             _fileWork.WriteFile($"FIXLO: Added exit label m{exitLabelNum}");
 
             return 0;
