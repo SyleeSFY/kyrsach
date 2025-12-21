@@ -303,6 +303,7 @@ namespace compiler_prog
             catch (Exception ex)
             {
                 GeneratedCode.Errors.Add("Ошибка сохранения файла: " + ex.Message);
+                
             }
         }
     }

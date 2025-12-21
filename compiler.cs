@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace CompilerModelLang
 {
@@ -46,7 +47,7 @@ namespace CompilerModelLang
                 {
                     // Предполагаем, что у вас есть DataGridView с именем operatorsGrid
                     // Если у вас другое имя, замените operatorsGrid на ваше
-                    dataGridView1.Rows.Add(item.Index, item.Operator);
+                    dataOperators.Rows.Add(item.Index, item.Operator);
                 });
         }
 
@@ -154,6 +155,9 @@ namespace CompilerModelLang
                     }
                     // Вывод в окно ПОЛИЗ
                     polizTextBox.Text = resultString;
+                    var generatedCode = syntaxObj.GetCodeGenerator();
+                    if (generatedCode != null) 
+                        codeGenerators.Text = generatedCode.Code;
                 }
                 statusLabel.Text = ErrorHandler(answerInt);
                 MessageBox.Show($"Syntax result: {answerInt}, POLIZ elements: {syntaxObj.free}", "Debug Info");

@@ -208,6 +208,11 @@ namespace compiler_prog
             return answer;
         }
 
+        public GeneratedCode GetCodeGenerator()
+        {
+            return _codeGenerator.GenerateCode();
+        }
+
         private bool IsID()
         {
             return currentLex.numTable == 4;
