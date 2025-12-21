@@ -1,0 +1,21 @@
+using System;
+using System.Collections.Generic;
+
+namespace GeneratedProgram
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            double a;
+            double b;
+            double c;
+
+            // Исполняемый код
+            a = 10.54;
+            b = 20.123;
+            c = (a + b);
+            Console.WriteLine(c);
+        }
+    }
+}

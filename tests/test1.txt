@@ -1,8 +1,27 @@
 program
-a, b, c : %;
+a, b, c : !;
+x, y, z : %;
 begin
-  a ass 10
-  b ass 20
-  c ass a plus b
+  a ass 10.54
+  b ass 20.123
+  c ass 30.789
+  
+  x ass 100
+  y ass 200
+  z ass 300
+  
+  a ass a plus 5.5
+  b ass b min 3.2
+  c ass a mult 2.0
+  
+  x ass x plus 50
+  y ass y min 25
+  z ass x mult 3
+  
+  write(a)
+  write(b)
   write(c)
+  write(x)
+  write(y)
+  write(z)
 end.

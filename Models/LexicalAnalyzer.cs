@@ -60,7 +60,6 @@ namespace compiler_prog
             return lexem == "~" || lexem == "not";
         }
 
-        // ОСТАЛЬНЫЕ СУЩЕСТВУЮЩИЕ МЕТОДЫ...
 
         private void AddLexem(int tableNum, int numInTable, bool isDeclared, string isValue)
         {
@@ -324,13 +323,11 @@ namespace compiler_prog
                         {
                             BufferToString();
 
-                            // ИСПОЛЬЗОВАНИЕ ДОБАВЛЕННЫХ МЕТОДОВ ДЛЯ ПРОВЕРКИ ОПЕРАЦИЙ
                             if (IsRelationOperation(bufferString) ||
                                 IsAdditionOperation(bufferString) ||
                                 IsMultiplicationOperation(bufferString) ||
                                 IsUnaryOperation(bufferString))
                             {
-                                // Это служебное слово - операция
                                 lookPosition = LookTable(bufferString, service);
                                 if (lookPosition != -1)
                                 {
