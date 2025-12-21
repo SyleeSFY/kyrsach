@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace compiler_prog.Models
 {
@@ -19,6 +16,8 @@ namespace compiler_prog.Models
 
         public void WriteFile(string text_write)
         {
+            // Добавляем перевод строки в конце каждого сообщения
+            text_write += Environment.NewLine;
             byte[] info = new UTF8Encoding(true).GetBytes(text_write);
             fs.Write(info, 0, info.Length);
         }
@@ -28,6 +27,5 @@ namespace compiler_prog.Models
 
         public void Close()
             => fs.Close();
-        
     }
 }
