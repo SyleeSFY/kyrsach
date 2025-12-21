@@ -743,7 +743,7 @@ namespace compiler_prog
             else
             {
                 int counter = 0;
-                foreach (string s in parentObj.Separators)
+                foreach (string s in parentObj.Delimiters)
                 {
                     if (s == oper) break;
                     counter++;

@@ -11,6 +11,7 @@ namespace compiler_prog
     {
         private readonly List<string> service = new List<string>();
         private readonly List<string> separators = new List<string>();
+        private readonly List<string> operators = new List<string>();
 
         private List<string> indentificators = new List<string>();
         private List<string> constants = new List<string>();
@@ -31,14 +32,21 @@ namespace compiler_prog
 
         public List<LexemStruct> TID = new List<LexemStruct>();
 
+        private StringBuilder lexOutput = new StringBuilder();
+
         public LexicalAnalyzer(ref CompilerData obj)
         {
             parentObj = obj;
-            this.service = parentObj.Service;
-            this.separators = parentObj.Separators;
+            this.service = parentObj.Keywords;
+            this.separators = parentObj.Delimiters;
+            this.operators = new List<string>(parentObj.OPERATORS);
         }
 
-        // ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ПРОВЕРКИ ОПЕРАЦИЙ
+        private bool IsOperator(string lexem)
+        {
+            return operators.Contains(lexem);
+        }
+
         private bool IsRelationOperation(string lexem)
         {
             return lexem == "NE" || lexem == "EQ" || lexem == "LT" ||
@@ -60,6 +68,18 @@ namespace compiler_prog
             return lexem == "~" || lexem == "not";
         }
 
+        private string GetTableName(int tableNum)
+        {
+            switch (tableNum)
+            {
+                case 1: return "Keywords";
+                case 2: return "Delimiters";
+                case 3: return "Constants";
+                case 4: return "Identifiers";
+                case 5: return "Operators";
+                default: return tableNum.ToString();
+            }
+        }
 
         private void AddLexem(int tableNum, int numInTable, bool isDeclared, string isValue)
         {
@@ -70,6 +90,69 @@ namespace compiler_prog
             tempLexem.value = isValue;
             tempLexem.type = String.Empty;
             parentObj.LexOut.Add(tempLexem);
+
+            string tableName = GetTableName(tableNum);
+
+            string currentOutput = lexOutput.ToString();
+
+            bool addNewLineBefore = false;
+
+            // Проверяем, нужно ли добавлять перенос строки ПЕРЕД лексемой
+            if (tableNum == 1) // Если это ключевое слово
+            {
+                // program, begin, end - с новой строки
+                if (isValue == "program" || isValue == "begin" || isValue == "end")
+                {
+                    addNewLineBefore = true;
+                }
+            }
+
+            // Добавляем перенос строки если нужно
+            if (addNewLineBefore && lexOutput.Length > 0)
+            {
+                // Проверяем, не является ли последний символ уже переносом строки
+                if (!currentOutput.EndsWith(Environment.NewLine))
+                {
+                    lexOutput.Append(Environment.NewLine);
+                }
+            }
+
+            // Добавляем саму лексему
+            if (lexOutput.Length > 0 && !currentOutput.EndsWith(Environment.NewLine))
+            {
+                lexOutput.Append(" ");
+            }
+
+            lexOutput.Append($"({tableName},{numInTable})");
+
+            // Проверяем, нужно ли добавлять перенос строки ПОСЛЕ лексемы
+            bool addNewLineAfter = false;
+
+            if (tableNum == 1) // Если это ключевое слово
+            {
+                // program и begin с пустой строкой после
+                if (isValue == "program" || isValue == "begin")
+                {
+                    addNewLineAfter = true;
+                }
+                // end не имеет пустой строки после
+            }
+
+            // Добавляем перенос строки после лексемы если нужно
+            if (addNewLineAfter)
+            {
+                lexOutput.Append(Environment.NewLine);
+            }
+        }
+
+        public string GetLexOutput()
+        {
+            return lexOutput.ToString();
+        }
+
+        public List<string> GetOperators()
+        {
+            return new List<string>(operators);
         }
 
         private void AddLexemTID(int tableNum, int numInTable, bool isDeclared, string isValue)
@@ -83,17 +166,24 @@ namespace compiler_prog
             parentObj.TID.Add(tempLexem);
         }
 
-        private int AddToTable(List<string> table)
+        private int AddToTable(List<string> table, string value = null)
         {
             int newElemIndex = table.Count();
-            table.Add(bufferString);
+            table.Add(value ?? bufferString);
             return newElemIndex;
         }
 
         private void GetSymbol()
         {
-            currentElemPosition++;
-            currentSymbol = pipeString[currentElemPosition];
+            if (currentElemPosition + 1 < pipeString.Length)
+            {
+                currentElemPosition++;
+                currentSymbol = pipeString[currentElemPosition];
+            }
+            else
+            {
+                currentSymbol = '⟂';
+            }
         }
 
         private void SetPipeString(string newPipeString)
@@ -126,22 +216,20 @@ namespace compiler_prog
 
         private int LookTable(string unknownWord, List<string> table)
         {
-            int counter = 0;
-            foreach (string s in table)
+            for (int i = 0; i < table.Count; i++)
             {
-                if (unknownWord == s)
+                if (unknownWord == table[i])
                 {
-                    return counter;
+                    return i;
                 }
-                counter++;
             }
             return -1;
         }
 
         private bool IsSeparator()
         {
-            string symbol = String.Join("", currentSymbol);
-            foreach (string symbString in parentObj.Separators)
+            string symbol = currentSymbol.ToString();
+            foreach (string symbString in separators)
             {
                 if (symbString == symbol)
                 {
@@ -171,26 +259,28 @@ namespace compiler_prog
 
         private bool IsNumericAlphabet()
         {
-            if (char.IsDigit(currentSymbol) || currentSymbol == 'A' || currentSymbol == 'a' || currentSymbol == 'B' || currentSymbol == 'b' || currentSymbol == 'C' || currentSymbol == 'c'
-                || currentSymbol == 'D' || currentSymbol == 'd' || currentSymbol == 'E' || currentSymbol == 'e' || currentSymbol == 'F' || currentSymbol == 'f'
-                || currentSymbol == 'O' || currentSymbol == 'o' || currentSymbol == 'H' || currentSymbol == 'h')
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return char.IsDigit(currentSymbol) ||
+                   currentSymbol == 'A' || currentSymbol == 'a' ||
+                   currentSymbol == 'B' || currentSymbol == 'b' ||
+                   currentSymbol == 'C' || currentSymbol == 'c' ||
+                   currentSymbol == 'D' || currentSymbol == 'd' ||
+                   currentSymbol == 'E' || currentSymbol == 'e' ||
+                   currentSymbol == 'F' || currentSymbol == 'f' ||
+                   currentSymbol == 'O' || currentSymbol == 'o' ||
+                   currentSymbol == 'H' || currentSymbol == 'h';
         }
 
         private void ViewPreviousSymbol()
         {
-            previousSymbol = pipeString[currentElemPosition - 1];
+            if (currentElemPosition > 0)
+            {
+                previousSymbol = pipeString[currentElemPosition - 1];
+            }
         }
 
         private string ConcatChar(char symbol1, char symbol2)
         {
-            return String.Join("", symbol1, symbol2);
+            return symbol1.ToString() + symbol2;
         }
 
         private void AddResultToData()
@@ -210,6 +300,7 @@ namespace compiler_prog
             pipeString = String.Empty;
             bufferString = String.Empty;
             bufferElem.Clear();
+            lexOutput.Clear();
         }
 
         private void SetLexStatus()
@@ -219,22 +310,8 @@ namespace compiler_prog
 
         private bool IsLetterAlphabet(char symbol)
         {
-            if (symbol == 'A' || symbol == 'a' || symbol == 'B' || symbol == 'b' || symbol == 'C' || symbol == 'c' ||
-                symbol == 'D' || symbol == 'd' || symbol == 'E' || symbol == 'e' || symbol == 'F' || symbol == 'f' ||
-                symbol == 'G' || symbol == 'g' || symbol == 'H' || symbol == 'h' || symbol == 'I' || symbol == 'i' ||
-                symbol == 'J' || symbol == 'j' || symbol == 'K' || symbol == 'k' || symbol == 'L' || symbol == 'l' ||
-                symbol == 'M' || symbol == 'm' || symbol == 'N' || symbol == 'n' || symbol == 'O' || symbol == 'o' ||
-                symbol == 'P' || symbol == 'p' || symbol == 'Q' || symbol == 'q' || symbol == 'R' || symbol == 'r' ||
-                symbol == 'S' || symbol == 's' || symbol == 'T' || symbol == 't' || symbol == 'U' || symbol == 'u' ||
-                symbol == 'V' || symbol == 'v' || symbol == 'W' || symbol == 'w' || symbol == 'X' || symbol == 'x' ||
-                symbol == 'Y' || symbol == 'y' || symbol == 'Z' || symbol == 'z')
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            symbol = char.ToLower(symbol);
+            return symbol >= 'a' && symbol <= 'z';
         }
 
         public bool LexicalAnalyzerScan(string inputProgrammText)
@@ -278,9 +355,25 @@ namespace compiler_prog
                         }
                         else if (currentSymbol == '.')
                         {
-                            currentState = "RD";
+                            // Сохраняем точку в буфер
                             AddSymbol();
                             GetSymbol();
+                            // Проверяем, что следует после точки
+                            if (char.IsDigit(currentSymbol))
+                            {
+                                // Если после точки цифра - это дробное число
+                                currentState = "RD";
+                            }
+                            else if (currentSymbol == 'E' || currentSymbol == 'e')
+                            {
+                                // Если после точки E/e - это тоже часть числа
+                                currentState = "RD";
+                            }
+                            else
+                            {
+                                // Иначе это просто точка (разделитель)
+                                currentState = "SO";
+                            }
                         }
                         else if (IsSeparator())
                         {
@@ -301,6 +394,7 @@ namespace compiler_prog
                             currentState = "ERR";
                         }
                         break;
+
                     case "T":
                         BufferToString();
                         lookPosition = LookTable(bufferString, service);
@@ -310,10 +404,15 @@ namespace compiler_prog
                             GetSymbol();
                             currentState = "H";
                         }
+                        else
+                        {
+                            lexStatus = "Лексическая ошибка: неизвестный тип данных";
+                            currentState = "ERR";
+                        }
                         break;
 
                     case "I":
-                        if (IsLetterAlphabet(currentSymbol) || char.IsDigit(currentSymbol))
+                        if (IsLetterAlphabet(currentSymbol) || char.IsDigit(currentSymbol) || currentSymbol == '_')
                         {
                             AddSymbol();
                             GetSymbol();
@@ -323,34 +422,32 @@ namespace compiler_prog
                         {
                             BufferToString();
 
-                            if (IsRelationOperation(bufferString) ||
-                                IsAdditionOperation(bufferString) ||
-                                IsMultiplicationOperation(bufferString) ||
-                                IsUnaryOperation(bufferString))
+                            // Сначала проверяем, является ли это ключевым словом
+                            lookPosition = LookTable(bufferString, service);
+                            if (lookPosition != -1)
                             {
-                                lookPosition = LookTable(bufferString, service);
-                                if (lookPosition != -1)
-                                {
-                                    AddLexem(1, lookPosition, false, bufferString);
-                                }
+                                AddLexem(1, lookPosition, false, bufferString);
                             }
+                            // Затем проверяем операторы
+                            else if (IsOperator(bufferString))
+                            {
+                                lookPosition = LookTable(bufferString, operators);
+                                if (lookPosition == -1)
+                                {
+                                    lookPosition = AddToTable(operators);
+                                }
+                                AddLexem(5, lookPosition, false, bufferString);
+                            }
+                            // Иначе это идентификатор
                             else
                             {
-                                lookPosition = LookTable(bufferString, service);
-                                if (lookPosition != -1)
+                                lookPosition = LookTable(bufferString, indentificators);
+                                if (lookPosition == -1)
                                 {
-                                    AddLexem(1, lookPosition, false, bufferString);
+                                    lookPosition = AddToTable(indentificators);
+                                    AddLexemTID(4, lookPosition, false, bufferString);
                                 }
-                                else
-                                {
-                                    lookPosition = LookTable(bufferString, indentificators);
-                                    if (lookPosition == -1)
-                                    {
-                                        lookPosition = AddToTable(indentificators);
-                                        AddLexemTID(4, lookPosition, false, bufferString);
-                                    }
-                                    AddLexem(4, lookPosition, false, bufferString);
-                                }
+                                AddLexem(4, lookPosition, false, bufferString);
                             }
                             currentState = "H";
                         }
@@ -401,12 +498,21 @@ namespace compiler_prog
                         {
                             AddSymbol();
                             GetSymbol();
-                            currentState = "RD";
+                            if (char.IsDigit(currentSymbol))
+                            {
+                                currentState = "RD";
+                            }
+                            else
+                            {
+                                // Если после точки не цифра, обрабатываем как целое число
+                                currentState = "DN";
+                            }
                         }
-                        else if (currentSymbol == '+' || currentSymbol == '-')
+                        else if (currentSymbol == 'E' || currentSymbol == 'e')
                         {
-                            ViewPreviousSymbol();
-                            if (previousSymbol == 'E' || previousSymbol == 'e')
+                            AddSymbol();
+                            GetSymbol();
+                            if (currentSymbol == '+' || currentSymbol == '-' || char.IsDigit(currentSymbol))
                             {
                                 AddSymbol();
                                 GetSymbol();
@@ -416,11 +522,6 @@ namespace compiler_prog
                             {
                                 currentState = "DN";
                             }
-                        }
-                        else if (IsLetterAlphabet(currentSymbol))
-                        {
-                            lexStatus = "Лексическая ошибка: недопустимый алфавит числовой константы.";
-                            currentState = "ERR";
                         }
                         else
                         {
@@ -470,23 +571,42 @@ namespace compiler_prog
 
                     case "DN":
                         BufferToString();
-                        lookPosition = AddToTable(constants);
-                        AddLexem(3, lookPosition, false, bufferString);
+
+                        // Проверяем, является ли буфер просто точкой
+                        if (bufferString == ".")
+                        {
+                            lookPosition = LookTable(bufferString, separators);
+                            if (lookPosition != -1)
+                            {
+                                AddLexem(2, lookPosition, false, bufferString);
+                            }
+                            else
+                            {
+                                lookPosition = AddToTable(separators, bufferString);
+                                AddLexem(2, lookPosition, false, bufferString);
+                            }
+                        }
+                        else
+                        {
+                            lookPosition = AddToTable(constants);
+                            AddLexem(3, lookPosition, false, bufferString);
+                        }
                         currentState = "H";
                         break;
 
                     case "C":
-                        if (IsCommentEnd())
+                        if (currentSymbol == '⟂')
+                        {
+                            lexStatus = "Лексическая ошибка: не найден закрывающий символ для комментария.";
+                            currentState = "ERR";
+                        }
+                        else if (IsCommentEnd())
                         {
                             currentState = "H";
                         }
                         else
                         {
-                            if (currentSymbol == '⟂')
-                            {
-                                lexStatus = "Лексическая ошибка: не найден закрывающий символ для комментария.";
-                                currentState = "ERR";
-                            }
+                            GetSymbol();
                         }
                         break;
 
@@ -499,14 +619,7 @@ namespace compiler_prog
             }
             SetLexStatus();
             AddResultToData();
-            if (currentState == "OUT")
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return currentState == "OUT";
         }
     }
 }

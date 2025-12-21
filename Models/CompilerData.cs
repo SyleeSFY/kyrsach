@@ -20,23 +20,36 @@ namespace compiler_prog
         public List<string> Indentificators = new List<string>();
         public List<string> Constants = new List<string>();
 
-        // ОБНОВЛЕННЫЙ СПИСОК СЕРВИСНЫХ СЛОВ
-        public List<string> Service = new List<string>()  {
+        // ОСНОВНЫЕ КЛЮЧЕВЫЕ СЛОВА (без операторов)
+        public List<string> Keywords = new List<string>()  {
             "program", "begin", "end",             // программа
-            "dim", "ass",                          // объявление и присваивание
+            "dim",                                 // объявление
             "if", "then", "else",                  // условный оператор
             "for", "to", "do",                     // цикл for
-            "while", "do",                         // цикл while (do уже есть)
+            "while",                               // цикл while
             "read", "write",                       // ввод/вывод
             "%", "!", "$",                         // типы данных
-            "NE", "EQ", "LT", "LE", "GT", "GE",    // операции отношения
-            "plus", "min", "mult", "div",          // арифметические операции
-            "or", "and", "not",                    // логические операции
             "true", "false"                        // логические константы
         };
 
-        // ОБНОВЛЕННЫЙ СПИСОК РАЗДЕЛИТЕЛЕЙ
-        public List<string> Separators = new List<string>()  {
+        // ОПЕРАТОРЫ (вынесены в отдельный список)
+        public readonly List<string> OPERATORS = new List<string>()
+        {
+            // Операции отношения
+            "NE", "EQ", "LT", "LE", "GT", "GE",
+            
+            // Арифметические операции
+            "plus", "min", "mult", "div",
+            
+            // Логические операции
+            "or", "and", "not",
+            
+            // Присваивание
+            "ass"
+        };
+
+        // СУЩЕСТВУЮЩИЙ СПИСОК РАЗДЕЛИТЕЛЕЙ
+        public List<string> Delimiters = new List<string>()  {
             ":", ",", ".", "@", "\\", "#", "(", ")", ";", "~"
         };
     }
