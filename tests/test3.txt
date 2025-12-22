@@ -1,9 +1,0 @@
-program
-a : %;
-begin
-  a ass 5;
-  if a GT 5 then
-    write(a)
-  else
-    write(6)
-end.
