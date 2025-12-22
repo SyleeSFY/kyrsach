@@ -20,35 +20,25 @@ namespace compiler_prog
         public List<string> Indentificators = new List<string>();
         public List<string> Constants = new List<string>();
 
-        // ОСНОВНЫЕ КЛЮЧЕВЫЕ СЛОВА (без операторов)
         public List<string> Keywords = new List<string>()  {
-            "program", "begin", "end",             // программа
-            "dim",                                 // объявление
-            "if", "then", "else",                  // условный оператор
-            "for", "to", "do",                     // цикл for
-            "while",                               // цикл while
-            "read", "write",                       // ввод/вывод
-            "%", "!", "$",                         // типы данных
-            "true", "false"                        // логические константы
+            "program", "begin", "end",             
+            "dim",                                 
+            "if", "then", "else",                  
+            "for", "to", "do",                    
+            "while",                               
+            "read", "write",                       
+            "%", "!", "$",                        
+            "true", "false"                        
         };
 
-        // ОПЕРАТОРЫ (вынесены в отдельный список)
         public readonly List<string> OPERATORS = new List<string>()
         {
-            // Операции отношения
             "NE", "EQ", "LT", "LE", "GT", "GE",
-            
-            // Арифметические операции
             "plus", "min", "mult", "div",
-            
-            // Логические операции
             "or", "and", "not",
-            
-            // Присваивание
             "ass"
         };
 
-        // СУЩЕСТВУЮЩИЙ СПИСОК РАЗДЕЛИТЕЛЕЙ
         public List<string> Delimiters = new List<string>()  {
             ":", ",", ".", "@", "\\", "#", "(", ")", ";", "~"
         };
