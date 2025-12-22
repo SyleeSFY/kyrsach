@@ -17,27 +17,21 @@ namespace compiler_prog
     public class SyntaxAnalyzer
     {
         private int labelCounter = 1;
-
         private CodeGenerator _codeGenerator;
         private FileWork _fileWork;
-
         private LexemStruct currentLex;
         public List<LexemStruct> TID_temp = new List<LexemStruct>();
         private string currentLexValue;
         private int counterSLexem;
         CompilerData parentObj;
-        string TempPath;
 
-        string temp_str;
-        string temp_while;
-        string temp_for;
-        string temp_if;
+        // Для построения правил
+        private List<string> rulePath = new List<string>();
+        private string lastWrittenRule = "";
 
-        // Семантический анализатор
         private Stack<int> stackCheckDeclare = new Stack<int>();
         public Stack<string> stackCheckContVir = new Stack<string>();
 
-        // ПОЛИЗ
         public PolizStruct[] OutputPoliz = new PolizStruct[1000];
         public int free = 0;
 
@@ -48,19 +42,61 @@ namespace compiler_prog
             _fileWork = new FileWork();
         }
 
+        private void BeginRule(string ruleName)
+        {
+            rulePath.Clear();
+            rulePath.Add("PROG");
+            if (!string.IsNullOrEmpty(ruleName) && ruleName != "PROG")
+            {
+                rulePath.Add(ruleName);
+            }
+        }
+
+        private void AddToRulePath(string element)
+        {
+            rulePath.Add(element);
+        }
+
+        private void WriteRuleIfComplete()
+        {
+            if (rulePath.Count == 0) return;
+
+            var rule = string.Join(" -> ", rulePath);
+
+            // Пишем правило только если оно изменилось
+            if (rule != lastWrittenRule)
+            {
+                _fileWork.WriteFile(rule);
+                lastWrittenRule = rule;
+            }
+        }
+
+        private void CompleteRule()
+        {
+            WriteRuleIfComplete();
+            // Начинаем новое правило с PROG, но не сбрасываем полностью
+            // Просто удаляем все после PROG
+            while (rulePath.Count > 1)
+            {
+                rulePath.RemoveAt(rulePath.Count - 1);
+            }
+        }
+
         private int StartProgram()
         {
             int code;
-            _fileWork.WriteFile("Цепочка разбора");
             GetCurrentLexem();
+
+            BeginRule("");
+            WriteRuleIfComplete();
 
             if (currentLexValue != "program")
                 return 1;
 
-            _fileWork.WriteFile("PROG -> program");
+            AddToRulePath("program");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            TempPath = "PROG -> ";
             code = DESC();
             if (code != 0) return code;
 
@@ -68,51 +104,44 @@ namespace compiler_prog
             {
                 return 2;
             }
-            _fileWork.WriteFile("PROG -> begin");
+
+            CompleteRule(); // Завершаем предыдущее правило
+
+            BeginRule("");
+            AddToRulePath("begin");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // ФИКС: Обрабатываем все операторы до end
             while (currentLexValue != "end" && currentLexValue != "⟂")
             {
-                _fileWork.WriteFile($"StartProgram: Обрабатываем оператор, текущая лексема = '{currentLexValue}'");
-
                 code = OPER();
                 if (code != 0) return code;
 
-                // ФИКС: Улучшенная обработка разделителей после операторов
                 if (currentLexValue == ";")
                 {
-                    _fileWork.WriteFile("PROG -> ;");
+                    AddToRulePath(";");
+                    WriteRuleIfComplete();
                     GetCurrentLexem();
 
-                    // ФИКС: Проверяем специальные случаи после ;
                     if (currentLexValue == "else")
                     {
-                        _fileWork.WriteFile("StartProgram: Found 'else' after ';' - this is valid for if statement");
-                        // Продолжаем цикл без ошибки - else будет обработан в OPER()
                         continue;
                     }
 
-                    // ФИКС: Проверяем не кончился ли файл после ;
                     if (currentLexValue == "⟂")
                     {
                         return 3;
                     }
 
-                    // ФИКС: Если после ; сразу end - выходим
                     if (currentLexValue == "end")
                     {
                         break;
                     }
                 }
-                // ФИКС: Обработка else без точки с запятой (для then-веток без ;)
                 else if (currentLexValue == "else")
                 {
-                    _fileWork.WriteFile("StartProgram: Found 'else' without ';' - this is valid for if statement");
-                    // Продолжаем цикл без ошибки - else будет обработан в OPER()
                     continue;
                 }
-                // ФИКС: Если текущая лексема - начало нового оператора, продолжаем
                 else if (IsID() ||
                         currentLexValue == "if" ||
                         currentLexValue == "for" ||
@@ -121,54 +150,49 @@ namespace compiler_prog
                         currentLexValue == "write" ||
                         currentLexValue == "@")
                 {
-                    _fileWork.WriteFile($"StartProgram: Next operator '{currentLexValue}' without ';' - continuing");
-                    // Продолжаем цикл без ошибки
                     continue;
                 }
-                // ФИКС: Если встретили end - выходим из цикла
                 else if (currentLexValue == "end")
                 {
                     break;
                 }
                 else
                 {
-                    _fileWork.WriteFile($"StartProgram ERROR: Expected ';', 'else', 'end' or operator, but got: '{currentLexValue}'");
                     return 26;
                 }
             }
 
             if (currentLexValue != "end")
             {
-                _fileWork.WriteFile($"Ожидается 'end', но получено: '{currentLexValue}'");
                 return 3;
             }
-            _fileWork.WriteFile("PROG -> end");
+
+            CompleteRule(); // Завершаем предыдущее правило
+
+            BeginRule("");
+            AddToRulePath("end");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // ФИКС: Принимаем точку из любой таблицы (разделителей или констант)
             if (currentLexValue != "." && currentLexValue != "⟂")
             {
-                _fileWork.WriteFile($"Ожидается '.', но получено: '{currentLexValue}'");
                 return 24;
             }
 
             if (currentLexValue == ".")
             {
-                _fileWork.WriteFile("PROG -> .");
+                AddToRulePath(".");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
             }
 
-            // ФИКС: Проверяем что достигнут конец файла после точки
             if (currentLexValue != "⟂")
             {
-                _fileWork.WriteFile($"Ожидается конец файла после '.', но получено: '{currentLexValue}'");
-                return 28; // Добавьте эту ошибку в ErrorHandler
+                return 28;
             }
 
             return 0;
         }
-
-
 
         private void GetCurrentLexem()
         {
@@ -177,15 +201,12 @@ namespace compiler_prog
                 currentLex = parentObj.LexOut[counterSLexem];
                 currentLexValue = currentLex.value;
                 counterSLexem++;
-                _fileWork.WriteFile($"GetCurrentLexem: '{currentLexValue}'");
             }
             else
             {
                 currentLex.value = "⟂";
                 currentLexValue = "⟂";
             }
-            byte[] info = new UTF8Encoding(true).GetBytes("\n");
-            _fileWork.Write(info, 0, info.Length);
         }
 
         public int SyntaxStart()
@@ -195,7 +216,9 @@ namespace compiler_prog
             TID_temp = parentObj.TID.ToList();
             Array.Clear(OutputPoliz, 0, OutputPoliz.Length);
             free = 0;
-            labelCounter = 1; // ДОБАВЬТЕ ЭТУ СТРОКУ - СБРОС СЧЕТЧИКА МЕТОК!
+            labelCounter = 1;
+            rulePath.Clear();
+            lastWrittenRule = "";
             _fileWork.CreateFile();
             answer = StartProgram();
 
@@ -208,6 +231,11 @@ namespace compiler_prog
 
             _fileWork.Close();
             return answer;
+        }
+
+        public GeneratedCode GetCodeGenerator()
+        {
+            return _codeGenerator.GenerateCode();
         }
 
         private bool IsID()
@@ -248,7 +276,6 @@ namespace compiler_prog
                     case "D":
                         if (char.IsDigit(c))
                         {
-                            // Собираем "буфер"
                         }
                         else if (c == '.')
                         {
@@ -268,7 +295,6 @@ namespace compiler_prog
                     case "DP":
                         if (char.IsDigit(c))
                         {
-                            // Собираем "буфер"
                         }
                         else if (c == 'E' || c == 'e')
                         {
@@ -293,7 +319,6 @@ namespace compiler_prog
                     case "EXP1":
                         if (char.IsDigit(c))
                         {
-
                         }
                         else
                         {
@@ -334,7 +359,6 @@ namespace compiler_prog
                     case "D":
                         if (c == '0' || c == '1')
                         {
-                            // Листаем
                         }
                         else if (c == 'B' || c == 'b')
                         {
@@ -379,7 +403,6 @@ namespace compiler_prog
                     case "D":
                         if (char.IsDigit(c) || c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7')
                         {
-                            // Листаем
                         }
                         else if (c == 'O' || c == 'o')
                         {
@@ -424,7 +447,6 @@ namespace compiler_prog
                     case "D":
                         if (char.IsDigit(c))
                         {
-                            // Листаем
                         }
                         else if (c == 'D' || c == 'd')
                         {
@@ -470,7 +492,6 @@ namespace compiler_prog
                         if (char.IsDigit(c) || c == 'A' || c == 'a' || c == 'B' || c == 'b' || c == 'C' || c == 'c' || c == 'D' || c == 'd'
                             || c == 'E' || c == 'e' || c == 'F' || c == 'f')
                         {
-
                         }
                         else if (c == 'H' || c == 'h')
                         {
@@ -513,7 +534,6 @@ namespace compiler_prog
             }
         }
 
-        // Семантические функции
         private bool DecID(int number, string type)
         {
             LexemStruct temp;
@@ -537,9 +557,7 @@ namespace compiler_prog
 
         private bool CheckID()
         {
-            // Просто проверяем, объявлен ли идентификатор
-            // НЕ добавляем тип в стек здесь - это сделает LET()
-            if (TID_temp[currentLex.numInTable].isDeclared)
+            if (currentLex.numInTable < TID_temp.Count && TID_temp[currentLex.numInTable].isDeclared)
             {
                 return true;
             }
@@ -551,27 +569,20 @@ namespace compiler_prog
 
         private int CheckNum()
         {
-            _fileWork.WriteFile($"CheckNum: '{currentLexValue}'");
-
-            // Сначала проверяем специальные форматы чисел
             if (IsBin() || IsOct() || IsHex())
             {
-                _fileWork.WriteFile($"CheckNum: binary/octal/hex -> integer (%)");
-                return 1; // целые числа
+                return 1;
             }
             else if (IsDec())
             {
-                _fileWork.WriteFile($"CheckNum: decimal -> integer (%)");
-                return 1; // целые числа
+                return 1;
             }
             else if (IsReal())
             {
-                _fileWork.WriteFile($"CheckNum: real -> real (!)");
-                return 0; // вещественные числа
+                return 0;
             }
             else
             {
-                _fileWork.WriteFile($"CheckNum: unrecognized format");
                 return 21;
             }
         }
@@ -590,7 +601,7 @@ namespace compiler_prog
                 }
                 else if (t1 == "!" && t2 == "!")
                 {
-                    return "%";
+                    return "!";
                 }
                 else
                 {
@@ -660,82 +671,35 @@ namespace compiler_prog
             return String.Empty;
         }
 
-        private bool CheckUnarOperation()
-        {
-            // ФИКС: Проверяем что стек не пуст
-            if (stackCheckContVir.Count == 0)
-            {
-                _fileWork.WriteFile($"CheckUnarOperation ERROR: Stack is empty");
-                return false;
-            }
-
-            string type = stackCheckContVir.Pop();
-            bool result = type == "$";
-
-            if (result)
-            {
-                stackCheckContVir.Push("$");
-            }
-
-            _fileWork.WriteFile($"CheckUnarOperation: type={type}, result={result}");
-
-            return result;
-        }
         private bool LetEquale()
         {
-            // ФИКС: Проверяем достаточно ли элементов в стеке
             if (stackCheckContVir.Count < 2)
             {
-                _fileWork.WriteFile($"LetEquale ERROR: Stack has {stackCheckContVir.Count} elements, need 2");
                 return false;
             }
 
-            string t2 = stackCheckContVir.Pop(); // тип выражения (правой части)
-            string t1 = stackCheckContVir.Pop(); // тип идентификатора (левой части)
+            string t2 = stackCheckContVir.Pop();
+            string t1 = stackCheckContVir.Pop();
 
-            _fileWork.WriteFile($"LetEquale: t1(ID)={t1}, t2(expression)={t2}, equal={t1 == t2}");
-
-            return t1 == t2; // Типы должны совпадать
+            return t1 == t2;
         }
 
         private bool BoolEquale()
         {
-            // ФИКС: Проверяем что стек не пуст
             if (stackCheckContVir.Count == 0)
             {
-                _fileWork.WriteFile($"BoolEquale ERROR: Stack is empty");
                 return false;
             }
 
             string t1 = stackCheckContVir.Pop();
             bool result = t1 == "$";
 
-            _fileWork.WriteFile($"BoolEquale: t1={t1}, result={result}");
-
             return result;
         }
 
-        // ПОЛИЗ функции
         void putPolizeLex(PolizStruct lex)
         {
             OutputPoliz[free] = lex;
-
-            // Логируем с красивым форматированием
-            string logMsg = $"POLIZ[{free}]: ";
-            if (lex.classValue == 0) // метка
-                logMsg += $"Label m{lex.value}:";
-            else if (lex.classValue == 2 && lex.type == "УПЛ")
-                logMsg += $"УПЛ m{lex.value}";
-            else if (lex.classValue == 2 && lex.type == "БП")
-                logMsg += $"БП m{lex.value}";
-            else if (lex.classValue == 2) // операция
-                logMsg += $"Operation '{lex.type}'";
-            else if (lex.classValue == 3) // константа
-                logMsg += $"Constant '{lex.type}'";
-            else if (lex.classValue == 4) // идентификатор
-                logMsg += $"Variable '{lex.type}'";
-
-            _fileWork.WriteFile(logMsg);
             free++;
         }
 
@@ -747,13 +711,13 @@ namespace compiler_prog
             {
                 temp.type = "УПЛ";
                 temp.classValue = 2;
-                temp.value = 0; // БУДЕТ ЗАПОЛНЕНО ПОЗЖЕ
+                temp.value = 0;
             }
             else if (oper == "!" || oper == "БП")
             {
                 temp.type = "БП";
                 temp.classValue = 2;
-                temp.value = 0; // БУДЕТ ЗАПОЛНЕНО ПОЗЖЕ
+                temp.value = 0;
             }
             else if (oper == "R")
             {
@@ -770,7 +734,7 @@ namespace compiler_prog
             else
             {
                 int counter = 0;
-                foreach (string s in parentObj.Separators)
+                foreach (string s in parentObj.Delimiters)
                 {
                     if (s == oper) break;
                     counter++;
@@ -789,35 +753,28 @@ namespace compiler_prog
             OutputPoliz[free - 1].type = lex.type;
         }
 
-        // Метод для создания меток m1:, m2:, m3: и т.д.
         PolizStruct makePolizeLabel()
         {
             PolizStruct temp = new PolizStruct();
-            temp.classValue = 0; // 0 означает метку
-            temp.value = labelCounter; // номер метки (1, 2, 3...)
-            temp.type = $"m{labelCounter}:"; // формат m1:, m2:, m3:
+            temp.classValue = 0;
+            temp.value = labelCounter;
+            temp.type = $"m{labelCounter}:";
 
-            int currentLabel = labelCounter; // запоминаем текущий номер
-            labelCounter++; // увеличиваем для следующей метки
+            int currentLabel = labelCounter;
+            labelCounter++;
 
-            _fileWork.WriteFile($"Created label m{currentLabel}:");
             return temp;
         }
 
         PolizStruct makePolizeLabelWithNumber(int labelNumber)
         {
             PolizStruct temp = new PolizStruct();
-            temp.classValue = 0; // 0 - метка
+            temp.classValue = 0;
             temp.value = labelNumber;
-            temp.type = $"m{labelNumber}:"; // для отображения
+            temp.type = $"m{labelNumber}:";
 
-            // Но для ПОЛИЗа нужно сохранить числовое значение
-            _fileWork.WriteFile($"Created label m{labelNumber}: with value {labelNumber}");
             return temp;
         }
-
-        // ГРАММАТИКА
-
 
         private int DESC()
         {
@@ -826,42 +783,36 @@ namespace compiler_prog
 
             while (IsID())
             {
-                _fileWork.WriteFile(TempPath + "DESC -> I1");
+                CompleteRule(); // Завершаем предыдущее правило
+                BeginRule("DESC");
+                AddToRulePath("I1");
                 code = I1();
                 if (code != 0) return code;
 
-                _fileWork.WriteFile(TempPath + "DESC -> TYPE");
+                AddToRulePath("TYPE");
                 code = TYPE();
                 if (code != 0) return code;
 
-                // СОХРАНИТЬ ТИП ДО GetCurrentLexem()
-                string variableType = currentLexValue; // Сохраняем тип ("%", "!", "$")
-                _fileWork.WriteFile($"DESC: Saving type '{variableType}' for variables");
+                string variableType = currentLexValue;
 
-                GetCurrentLexem(); // Переходим к следующей лексеме после типа
+                GetCurrentLexem();
 
                 while (stackCheckDeclare.Count > 0)
                 {
                     stackNum = stackCheckDeclare.Pop();
-                    // Используем СОХРАНЕННЫЙ тип, а не currentLexValue
                     if (!DecID(stackNum, variableType))
                     {
-                        _fileWork.WriteFile($"DESC ERROR: Failed to declare ID {stackNum} with type {variableType}");
                         return 101;
-                    }
-                    else
-                    {
-                        _fileWork.WriteFile($"DESC: Successfully declared ID {stackNum} with type {variableType}");
                     }
                 }
 
-                // ФИКС: Проверяем точку с запятой после объявления типа
                 if (currentLexValue != ";")
                 {
-                    _fileWork.WriteFile($"DESC ERROR: Expected ';' after type declaration, but got: '{currentLexValue}'");
                     return 4;
                 }
-                _fileWork.WriteFile(TempPath + "DESC -> ;");
+
+                AddToRulePath(";");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
             }
 
@@ -871,7 +822,8 @@ namespace compiler_prog
         private int I1()
         {
             int code;
-            _fileWork.WriteFile("-> ID ");
+
+            AddToRulePath("ID");
             code = ID();
             if (code != 0) return code;
 
@@ -890,20 +842,23 @@ namespace compiler_prog
             code = IsIDAlphabet();
             if (code != 0) return code;
 
-            _fileWork.WriteFile("-> " + currentLexValue + " ");
+            AddToRulePath(currentLexValue);
+            WriteRuleIfComplete();
             return 0;
         }
 
         private int I2()
         {
-            int code;
             if (currentLexValue == ",")
             {
-                _fileWork.WriteFile(TempPath + "-> ,");
+                // Удаляем последний элемент (значение ID) и добавляем запятую
+                if (rulePath.Count > 0 && rulePath[rulePath.Count - 1] != "ID")
+                    rulePath.RemoveAt(rulePath.Count - 1);
+
+                AddToRulePath(",");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
-                _fileWork.WriteFile(TempPath);
-                code = I1();
-                return code;
+                return I1();
             }
             else if (currentLexValue == ":")
             {
@@ -920,7 +875,8 @@ namespace compiler_prog
         {
             if (currentLexValue == ":")
             {
-                _fileWork.WriteFile("TYPE -> :");
+                AddToRulePath(":");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
             }
             else
@@ -928,16 +884,14 @@ namespace compiler_prog
                 return 4;
             }
 
-            // ФИКС: Проверяем что текущая лексема является допустимым типом
             if (currentLexValue == "%" || currentLexValue == "!" || currentLexValue == "$")
             {
-                _fileWork.WriteFile("TYPE -> " + currentLexValue + " ");
-                // НЕ вызываем GetCurrentLexem() здесь - это сделает вызывающий код
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
                 return 0;
             }
             else
             {
-                _fileWork.WriteFile($"TYPE ERROR: Expected type ('%', '!', or '$'), but got: '{currentLexValue}'");
                 return 5;
             }
         }
@@ -956,53 +910,58 @@ namespace compiler_prog
 
         private int OPER()
         {
-            int code;
-
             if (currentLexValue == "end")
             {
                 return 0;
             }
             else if (currentLexValue == "@")
             {
-                _fileWork.WriteFile("OPER -> SOST");
-                code = SOST();
-                return code;
+                CompleteRule();
+                BeginRule("SOST");
+                int result = SOST();
+                return result;
             }
             else if (IsID())
             {
-                TempPath += "OPER -> LET ";
-                code = LET();
-                return code;
+                CompleteRule();
+                BeginRule("LET");
+                int result = LET();
+                return result;
             }
             else if (currentLexValue == "if")
             {
-                TempPath += "OPER -> IFEL ";
-                code = IFEL();
-                return code;
+                CompleteRule();
+                BeginRule("IFEL");
+                int result = IFEL();
+                return result;
             }
             else if (currentLexValue == "for")
             {
-                TempPath += "OPER -> FIXLO ";
-                code = FIXLO();
-                return code;
+                CompleteRule();
+                BeginRule("FIXLO");
+                int result = FIXLO();
+                return result;
             }
             else if (currentLexValue == "while")
             {
-                TempPath += "OPER -> IFLO ";
-                code = IFLO();
-                return code;
+                CompleteRule();
+                BeginRule("IFLO");
+                int result = IFLO();
+                return result;
             }
             else if (currentLexValue == "read")
             {
-                TempPath += "OPER -> INPU ";
-                code = INPU();
-                return code;
+                CompleteRule();
+                BeginRule("INPU");
+                int result = INPU();
+                return result;
             }
             else if (currentLexValue == "write")
             {
-                TempPath += "OPER -> OUPU ";
-                code = OUPU();
-                return code;
+                CompleteRule();
+                BeginRule("OUPU");
+                int result = OUPU();
+                return result;
             }
             else
             {
@@ -1019,7 +978,8 @@ namespace compiler_prog
 
             while (currentLexValue == "@")
             {
-                _fileWork.WriteFile("SOST -> @");
+                AddToRulePath("@");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
                 code = OPER();
                 if (code != 0) return code;
@@ -1033,77 +993,315 @@ namespace compiler_prog
             PolizStruct temp;
             int code;
 
-            _fileWork.WriteFile($"=== LET START: {currentLexValue} ===");
-
-            // 1. СОХРАНИТЕ идентификатор
             string currentID = currentLexValue;
             int currentIDIndex = currentLex.numInTable;
-            _fileWork.WriteFile($"LET: Saving ID '{currentID}' with index {currentIDIndex}");
 
-            // 2. Обрабатываем ID
-            _fileWork.WriteFile(TempPath + "LET -> ID ");
+            AddToRulePath("ID");
             code = ID();
             if (code != 0) return code;
 
-            // 3. Проверяем объявление
             if (currentIDIndex >= TID_temp.Count || !TID_temp[currentIDIndex].isDeclared)
             {
-                _fileWork.WriteFile($"LET ERROR: ID '{currentID}' not declared or out of range");
                 return 102;
             }
 
             string idType = TID_temp[currentIDIndex].type;
 
-            // 4. ОЧИЩАЕМ стек и ДОБАВЛЯЕМ тип ID
             stackCheckContVir.Clear();
             stackCheckContVir.Push(idType);
-            _fileWork.WriteFile($"LET: Pushed ID type '{idType}' to stack");
 
-            // 5. СОЗДАЕМ POLIZ запись для идентификатора (но НЕ добавляем сейчас!)
             temp.classValue = currentLex.numTable;
             temp.value = currentIDIndex;
             temp.type = currentID;
-            // НЕ ВЫЗЫВАЕМ putPolizeLex(temp) здесь!
+            PolizStruct idPolizEntry = temp;
 
             GetCurrentLexem();
 
-            // 6. Проверяем 'ass'
             if (currentLexValue != "ass")
             {
-                _fileWork.WriteFile($"LET ERROR: Expected 'ass', but got: '{currentLexValue}'");
                 return 10;
             }
-            _fileWork.WriteFile("LET -> ass");
+
+            AddToRulePath("ass");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // 7. Обрабатываем выражение (оно добавится в ПОЛИЗ первым)
+            AddToRulePath("VIR");
             code = VIR();
             if (code != 0) return code;
 
-            // 8. Проверяем типы - теперь в стеке должно быть: тип_выражения, тип_ID
             if (!LetEquale())
             {
-                _fileWork.WriteFile($"LET ERROR: Type mismatch in assignment");
                 return 103;
             }
 
-            // 9. ТЕПЕРЬ добавляем идентификатор в ПОЛИЗ (после выражения)
-            putPolizeLex(temp);
-            _fileWork.WriteFile($"LET: Added ID '{currentID}' to POLIZ after expression");
-
-            // 10. Добавляем операцию присваивания
+            // Добавляем операцию присваивания в ПОЛИЗ
+            putPolizeLex(idPolizEntry);
             putPolizeLex(putOperationLex("="));
-            _fileWork.WriteFile($"LET: Added assignment operation");
 
-            // 11. Проверяем разделитель
             if (currentLexValue == ";")
             {
+                AddToRulePath(";");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
-                _fileWork.WriteFile("LET: Skipping ';'");
             }
 
-            _fileWork.WriteFile($"=== LET SUCCESS ===");
             return 0;
+        }
+
+        private int VIR()
+        {
+            int code;
+            AddToRulePath("OPRD");
+            code = OPRD();
+            if (code != 0) return code;
+
+            code = VIR1();
+            if (code != 0) return code;
+
+            if (stackCheckContVir.Count == 0)
+            {
+                return 25;
+            }
+
+            return 0;
+        }
+
+        private int VIR1()
+        {
+            int code;
+            if (currentLexValue == "NE" || currentLexValue == "EQ" || currentLexValue == "LT" ||
+                currentLexValue == "LE" || currentLexValue == "GT" || currentLexValue == "GE")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                string operation = currentLexValue;
+
+                if (stackCheckContVir.Count == 0)
+                {
+                    return 110;
+                }
+
+                GetCurrentLexem();
+
+                code = VIR();
+                if (code != 0) return code;
+
+                if (stackCheckContVir.Count < 2)
+                {
+                    return 110;
+                }
+
+                string t2 = stackCheckContVir.Pop();
+                string t1 = stackCheckContVir.Pop();
+                string res = GetType(operation, t1, t2);
+
+                if (res != string.Empty)
+                {
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                    return 0;
+                }
+                else
+                {
+                    return 110;
+                }
+            }
+            return 0;
+        }
+
+        private int OPRD()
+        {
+            int code;
+            AddToRulePath("SLAG");
+            code = SLAG();
+            if (code != 0) return code;
+
+            while (currentLexValue == "plus" || currentLexValue == "min" || currentLexValue == "or")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                string operation = currentLexValue;
+
+                GetCurrentLexem();
+
+                AddToRulePath("SLAG");
+                code = SLAG();
+                if (code != 0) return code;
+
+                if (stackCheckContVir.Count < 2)
+                {
+                    return 111;
+                }
+
+                string t2 = stackCheckContVir.Pop();
+                string t1 = stackCheckContVir.Pop();
+                string res = GetType(operation, t1, t2);
+
+                if (res != string.Empty)
+                {
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    return 111;
+                }
+            }
+
+            return 0;
+        }
+
+        private int SLAG()
+        {
+            int code;
+            AddToRulePath("MNOJ");
+            code = MNOJ();
+            if (code != 0) return code;
+
+            while (currentLexValue == "mult" || currentLexValue == "div" || currentLexValue == "and")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                string operation = currentLexValue;
+
+                GetCurrentLexem();
+
+                AddToRulePath("MNOJ");
+                code = MNOJ();
+                if (code != 0) return code;
+
+                if (stackCheckContVir.Count < 2)
+                {
+                    return 112;
+                }
+
+                string t2 = stackCheckContVir.Pop();
+                string t1 = stackCheckContVir.Pop();
+                string res = GetType(operation, t1, t2);
+
+                if (res != string.Empty)
+                {
+                    stackCheckContVir.Push(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    return 112;
+                }
+            }
+
+            return 0;
+        }
+
+        private int MNOJ()
+        {
+            PolizStruct temp;
+            int code;
+
+            if (IsID())
+            {
+                AddToRulePath("ID");
+                code = ID();
+                if (code != 0) return code;
+
+                if (!CheckID())
+                {
+                    return 113;
+                }
+
+                string idType = TID_temp[currentLex.numInTable].type;
+                stackCheckContVir.Push(idType);
+
+                temp.classValue = currentLex.numTable;
+                temp.value = currentLex.numInTable;
+                temp.type = currentLexValue;
+
+                // Добавляем идентификатор в ПОЛИЗ
+                putPolizeLex(temp);
+
+                GetCurrentLexem();
+                return 0;
+            }
+            else if (IsNumConst())
+            {
+                AddToRulePath("NUM");
+                // Проверяем тип числа
+                int numType = CheckNum();
+                string constType = (numType == 0) ? "!" : "%";
+                stackCheckContVir.Push(constType);
+
+                // Создаем запись для константы
+                temp.classValue = currentLex.numTable;
+                temp.value = currentLex.numInTable;
+                temp.type = currentLexValue;
+
+                // Добавляем константу в ПОЛИЗ
+                putPolizeLex(temp);
+
+                // Добавляем значение константы
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+                return 0;
+            }
+            else if (currentLexValue == "false" || currentLexValue == "true")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                stackCheckContVir.Push("$");
+
+                temp.classValue = currentLex.numTable;
+                temp.value = currentLex.numInTable;
+                temp.type = currentLexValue;
+                putPolizeLex(temp);
+
+                GetCurrentLexem();
+                return 0;
+            }
+            else if (currentLexValue == "(")
+            {
+                AddToRulePath("(");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+
+                AddToRulePath("VIR");
+                code = VIR();
+                if (code != 0) return code;
+
+                if (currentLexValue != ")")
+                {
+                    return 21;
+                }
+                AddToRulePath(")");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+                return 0;
+            }
+            else
+            {
+                return 22;
+            }
+        }
+
+        private int NUM()
+        {
+            int checkResult = CheckNum();
+
+            if (checkResult == 0)
+            {
+                stackCheckContVir.Push("!");
+                return 0;
+            }
+            else if (checkResult == 1)
+            {
+                stackCheckContVir.Push("%");
+                return 0;
+            }
+            else
+            {
+                return 23;
+            }
         }
 
         private int IFEL()
@@ -1111,11 +1309,11 @@ namespace compiler_prog
             int code;
             int jumpFalsePos, jumpUncondPos;
 
-            _fileWork.WriteFile(TempPath + "IFEL -> if ");
-            temp_if = TempPath;
-            GetCurrentLexem(); // пропускаем "if"
+            AddToRulePath("if");
+            WriteRuleIfComplete();
+            GetCurrentLexem();
 
-            TempPath += "IFEL -> VIR ";
+            AddToRulePath("VIR");
             code = VIR();
             if (code != 0) return code;
 
@@ -1124,9 +1322,8 @@ namespace compiler_prog
                 return 104;
             }
 
-            // Условный переход (если условие ложно - перейти к else)
             jumpFalsePos = free;
-            int elseLabelNum = labelCounter; // номер метки для else
+            int elseLabelNum = labelCounter;
 
             PolizStruct tempJumpFalse = new PolizStruct();
             tempJumpFalse.type = "УПЛ";
@@ -1138,16 +1335,17 @@ namespace compiler_prog
             {
                 return 11;
             }
-            _fileWork.WriteFile(temp_if + "IFEL -> then ");
+
+            AddToRulePath("then");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            TempPath = temp_if + "IFEL -> OPER ";
+            AddToRulePath("OPER");
             code = OPER();
             if (code != 0) return code;
 
-            // Безусловный переход (после then - перейти после if-else)
             jumpUncondPos = free;
-            int afterIfLabelNum = labelCounter + 1; // номер метки после if-else
+            int afterIfLabelNum = labelCounter + 1;
 
             PolizStruct tempJumpUncond = new PolizStruct();
             tempJumpUncond.type = "БП";
@@ -1155,69 +1353,54 @@ namespace compiler_prog
             tempJumpUncond.value = afterIfLabelNum;
             putPolizeLex(tempJumpUncond);
 
-            // МЕТКА ELSE (но только если есть else)
             if (currentLexValue == "else")
             {
-                // Создаем метку для else
-                putPolizeLex(makePolizeLabel()); // создаст m{elseLabelNum}:
+                putPolizeLex(makePolizeLabel());
 
                 GetCurrentLexem();
 
-                TempPath = temp_if + "IFEL -> OPER ";
+                AddToRulePath("OPER");
                 code = OPER();
                 if (code != 0) return code;
 
-                // МЕТКА ПОСЛЕ IF-ELSE
-                putPolizeLex(makePolizeLabel()); // создаст m{afterIfLabelNum}:
+                putPolizeLex(makePolizeLabel());
             }
             else
             {
-                // Если else нет, то afterIfLabelNum - это следующая метка
-                // Создаем метку после if (там будет выполнение после условия)
-                putPolizeLex(makePolizeLabel()); // создаст m{elseLabelNum}: но это будет метка после if
+                putPolizeLex(makePolizeLabel());
             }
 
             return 0;
         }
+
         private int FIXLO()
         {
             int falseJumpPos;
             int code;
 
-            _fileWork.WriteFile(TempPath + "FIXLO -> for ");
-            temp_for = TempPath;
-            GetCurrentLexem(); // пропускаем "for"
+            AddToRulePath("for");
+            WriteRuleIfComplete();
+            GetCurrentLexem();
 
-            string savedTempPath = TempPath;
-            TempPath = temp_for + "FIXLO -> LET ";
-
-            code = LET(); // обработка i ass 1
+            AddToRulePath("LET");
+            code = LET();
             if (code != 0) return code;
-
-            _fileWork.WriteFile($"FIXLO: After first LET, currentLexValue = '{currentLexValue}'");
-
-            TempPath = temp_for;
 
             if (currentLexValue != "to")
             {
-                _fileWork.WriteFile($"FIXLO ERROR: Expected 'to', but got: '{currentLexValue}'");
                 return 14;
             }
-            _fileWork.WriteFile(TempPath + "FIXLO -> to ");
+
+            AddToRulePath("to");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // СОЗДАЕМ МЕТКУ НАЧАЛА ЦИКЛА
             int loopStartLabelNum = labelCounter;
             PolizStruct startLabel = makePolizeLabel();
-            putPolizeLex(startLabel); // добавляем метку m1:
+            putPolizeLex(startLabel);
 
-            int loopStartPos = free - 1;
-            _fileWork.WriteFile($"FIXLO: Loop start label m{loopStartLabelNum} at position {loopStartPos}");
-
-            // Добавляем переменную i для сравнения
             PolizStruct tempVarI;
-            tempVarI.classValue = 4; // TID
-                                     // Находим индекс переменной i в TID_temp
+            tempVarI.classValue = 4;
             int iIndex = -1;
             for (int j = 0; j < TID_temp.Count; j++)
             {
@@ -1231,9 +1414,8 @@ namespace compiler_prog
             tempVarI.value = iIndex;
             tempVarI.type = "i";
             putPolizeLex(tempVarI);
-            _fileWork.WriteFile($"FIXLO: Added variable i at position {free - 1}");
 
-            // Обрабатываем верхнюю границу (выражение после "to")
+            AddToRulePath("VIR");
             code = VIR();
             if (code != 0) return code;
 
@@ -1241,13 +1423,10 @@ namespace compiler_prog
             string exprType = stackCheckContVir.Pop();
             if (exprType != "%" && exprType != "!") return 105;
 
-            // Добавляем операцию сравнения (i <= верхняя_граница)
             putPolizeLex(putOperationLex("LE"));
-            _fileWork.WriteFile($"FIXLO: Added LE operation at position {free - 1}");
 
-            // Условный переход если условие ЛОЖЬ (выход из цикла)
             falseJumpPos = free;
-            int exitLabelNum = labelCounter; // следующая метка для выхода
+            int exitLabelNum = labelCounter;
 
             PolizStruct tempJump = new PolizStruct();
             tempJump.type = "УПЛ";
@@ -1255,52 +1434,35 @@ namespace compiler_prog
             tempJump.value = exitLabelNum;
 
             putPolizeLex(tempJump);
-            _fileWork.WriteFile($"FIXLO: Added УПЛ operation at position {falseJumpPos} to jump to m{exitLabelNum}");
 
-            // Проверяем "do"
             if (currentLexValue != "do")
             {
-                _fileWork.WriteFile($"FIXLO ERROR: Expected 'do', but got: '{currentLexValue}'");
                 return 15;
             }
-            _fileWork.WriteFile(TempPath + "FIXLO -> do");
+
+            AddToRulePath("do");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // ВАЖНОЕ ИЗМЕНЕНИЕ: обрабатываем составной оператор
-            // Сохраняем позицию перед телом цикла для вычисления адресов
-            int beforeLoopBodyPos = free;
-
-            // Обрабатываем ТЕЛО ЦИКЛА как составной оператор
-            // Сначала обрабатываем первый оператор
+            AddToRulePath("OPER");
             code = OPER();
             if (code != 0) return code;
 
-            // Затем обрабатываем дополнительные операторы с @
             while (currentLexValue == "@")
             {
-                _fileWork.WriteFile("FIXLO: Found @ for compound statement");
-                GetCurrentLexem(); // пропускаем @
+                GetCurrentLexem();
 
-                // Обрабатываем следующий оператор
                 code = OPER();
                 if (code != 0) return code;
 
-                // Проверяем разделитель
                 if (currentLexValue == ";")
                 {
-                    _fileWork.WriteFile("FIXLO: Skipping ; after @ operator");
                     GetCurrentLexem();
                 }
             }
 
-            // ФИКС: После обработки тела цикла нужно вернуться к вычислению инкремента
-
-            // Инкремент i := i + 1
-            // Снова добавляем переменную i
             putPolizeLex(tempVarI);
-            _fileWork.WriteFile($"FIXLO: Added variable i for increment at position {free - 1}");
 
-            // Константа 1
             PolizStruct tempOne = new PolizStruct();
             tempOne.classValue = 3;
             int constOneIndex = parentObj.Constants.IndexOf("1");
@@ -1312,32 +1474,22 @@ namespace compiler_prog
             tempOne.value = constOneIndex;
             tempOne.type = "1";
             putPolizeLex(tempOne);
-            _fileWork.WriteFile($"FIXLO: Added constant 1 at position {free - 1}");
 
-            // Операция сложения
             putPolizeLex(putOperationLex("plus"));
-            _fileWork.WriteFile($"FIXLO: Added plus operation at position {free - 1}");
 
-            // Присваивание результата обратно в i
             putPolizeLex(tempVarI);
-            _fileWork.WriteFile($"FIXLO: Added variable i for assignment at position {free - 1}");
 
             putPolizeLex(putOperationLex("="));
-            _fileWork.WriteFile($"FIXLO: Added = operation at position {free - 1}");
 
-            // Безусловный переход к началу цикла
             PolizStruct tempBackJump = new PolizStruct();
             tempBackJump.type = "БП";
             tempBackJump.classValue = 2;
             tempBackJump.value = loopStartLabelNum;
 
             putPolizeLex(tempBackJump);
-            _fileWork.WriteFile($"FIXLO: Added БП operation at position {free - 1} to jump to m{loopStartLabelNum}");
 
-            // МЕТКА ВЫХОДА ИЗ ЦИКЛА
             PolizStruct exitLabel = makePolizeLabelWithNumber(exitLabelNum);
             putPolizeLex(exitLabel);
-            _fileWork.WriteFile($"FIXLO: Added exit label m{exitLabelNum}");
 
             return 0;
         }
@@ -1347,22 +1499,21 @@ namespace compiler_prog
             int jumpFalsePos;
             int code;
 
-            _fileWork.WriteFile(TempPath + "IFLO -> while ");
-            temp_while = TempPath;
+            AddToRulePath("while");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            // МЕТКА НАЧАЛА ЦИКЛА
             int loopStartLabelNum = labelCounter;
-            putPolizeLex(makePolizeLabel()); // m1:
+            putPolizeLex(makePolizeLabel());
 
-            code = VIR(); // обработка условия (i LE 5)
+            AddToRulePath("VIR");
+            code = VIR();
             if (code != 0) return code;
 
             if (!BoolEquale()) return 106;
 
-            // Условный переход (если условие ложно - выйти из цикла)
             jumpFalsePos = free;
-            int exitLabelNum = labelCounter; // следующая метка будет для выхода
+            int exitLabelNum = labelCounter;
 
             PolizStruct tempJumpFalse = new PolizStruct();
             tempJumpFalse.type = "УПЛ";
@@ -1374,35 +1525,27 @@ namespace compiler_prog
 
             GetCurrentLexem();
 
-            // ВАЖНО: Нужно обработать ВСЕ операторы до конца цикла
-            // Пока не встретим ключевое слово, обозначающее конец блока
             while (currentLexValue != "end" && currentLexValue != "⟂" &&
                    currentLexValue != "while" && currentLexValue != "for" &&
                    currentLexValue != "if" && currentLexValue != "read" &&
                    currentLexValue != "write")
             {
-                _fileWork.WriteFile($"IFLO: Обрабатываем оператор внутри цикла: '{currentLexValue}'");
-
-                code = OPER(); // обрабатывает операторы внутри цикла
+                code = OPER();
                 if (code != 0) return code;
 
-                // Если после оператора есть ;, пропускаем его
                 if (currentLexValue == ";")
                 {
-                    _fileWork.WriteFile("IFLO: Пропускаем ';'");
                     GetCurrentLexem();
                 }
             }
 
-            // Безусловный переход к началу цикла
             PolizStruct tempJumpBack = new PolizStruct();
             tempJumpBack.type = "БП";
             tempJumpBack.classValue = 2;
             tempJumpBack.value = loopStartLabelNum;
             putPolizeLex(tempJumpBack);
 
-            // МЕТКА ВЫХОДА ИЗ ЦИКЛА
-            putPolizeLex(makePolizeLabel()); // m2:
+            putPolizeLex(makePolizeLabel());
 
             return 0;
         }
@@ -1412,17 +1555,20 @@ namespace compiler_prog
             PolizStruct temp;
             int code;
 
-            _fileWork.WriteFile(TempPath + "INPU -> read ");
+            AddToRulePath("read");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
             if (currentLexValue != "(")
             {
                 return 17;
             }
-            _fileWork.WriteFile(TempPath + "INPU -> ( ");
+
+            AddToRulePath("(");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
-            _fileWork.WriteFile(TempPath + "INPU -> ID ");
+            AddToRulePath("ID");
             code = ID();
             if (code != 0) return code;
 
@@ -1439,12 +1585,13 @@ namespace compiler_prog
 
             while (currentLexValue == ",")
             {
-                _fileWork.WriteFile(TempPath + "INPU -> , ");
+                AddToRulePath(",");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
 
                 if (IsID())
                 {
-                    _fileWork.WriteFile(TempPath + "INPU -> ID ");
+                    AddToRulePath("ID");
                     code = ID();
                     if (code != 0) return code;
 
@@ -1465,10 +1612,13 @@ namespace compiler_prog
             {
                 return 18;
             }
-            _fileWork.WriteFile(TempPath + "INPU -> ) ");
+
+            AddToRulePath(")");
+            WriteRuleIfComplete();
 
             putPolizeLex(putOperationLex("R"));
             GetCurrentLexem();
+
             return 0;
         }
 
@@ -1476,345 +1626,61 @@ namespace compiler_prog
         {
             int code;
 
-            _fileWork.WriteFile(TempPath + "OUPU -> write ");
+            AddToRulePath("write");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
             if (currentLexValue != "(")
             {
                 return 19;
             }
-            _fileWork.WriteFile(TempPath + "OUPU -> ( ");
+
+            AddToRulePath("(");
+            WriteRuleIfComplete();
             GetCurrentLexem();
 
+            AddToRulePath("VIR");
             code = VIR();
             if (code != 0) return code;
 
+            // Очищаем стек типов после обработки выражения
+            if (stackCheckContVir.Count > 0)
+            {
+                stackCheckContVir.Pop();
+            }
+
             while (currentLexValue == ",")
             {
+                AddToRulePath(",");
+                WriteRuleIfComplete();
                 GetCurrentLexem();
+
+                AddToRulePath("VIR");
                 code = VIR();
                 if (code != 0) return code;
+
+                // Очищаем стек типов после каждого выражения
+                if (stackCheckContVir.Count > 0)
+                {
+                    stackCheckContVir.Pop();
+                }
             }
 
             if (currentLexValue != ")")
             {
                 return 20;
             }
-            _fileWork.WriteFile(TempPath + "OUPU -> ) ");
 
+            AddToRulePath(")");
+            WriteRuleIfComplete();
+
+            // Добавляем операцию W (write) в ПОЛИЗ
             putPolizeLex(putOperationLex("W"));
             GetCurrentLexem();
+
             return 0;
         }
 
-        private int VIR()
-        {
-            int code;
-            code = OPRD();
-            TempPath += "VIR -> OPRD ";
-            if (code != 0) return code;
-
-            code = VIR1();
-            if (code != 0) return code;
-
-            // ВАЖНО: проверяем что выражение вернуло тип в стек
-            if (stackCheckContVir.Count == 0)
-            {
-                _fileWork.WriteFile("VIR ERROR: Expression didn't return type to stack");
-                return 25; // Добавьте эту ошибку в ErrorHandler
-            }
-
-            _fileWork.WriteFile($"VIR: Expression type = {stackCheckContVir.Peek()}");
-            return 0;
-        }
-
-        private int VIR1()
-        {
-            int code;
-            if (currentLexValue == "NE" || currentLexValue == "EQ" || currentLexValue == "LT" ||
-                currentLexValue == "LE" || currentLexValue == "GT" || currentLexValue == "GE")
-            {
-                _fileWork.WriteFile(TempPath + "VIR1 -> " + currentLexValue + " ");
-
-                // Сохраняем операцию
-                string operation = currentLexValue;
-
-                GetCurrentLexem();
-
-                // Обрабатываем правый операнд
-                code = VIR();
-                if (code != 0) return code;
-
-                // Проверяем операцию сравнения
-                if (stackCheckContVir.Count < 2)
-                {
-                    _fileWork.WriteFile($"VIR1 ERROR: Not enough operands for '{operation}'");
-                    return 110;
-                }
-
-                string t2 = stackCheckContVir.Pop();  // правый операнд
-                string t1 = stackCheckContVir.Pop();  // левый операнд
-                string res = GetType(operation, t1, t2);
-
-                _fileWork.WriteFile($"VIR1: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
-
-                if (res != string.Empty)
-                {
-                    stackCheckContVir.Push(res);
-                    putPolizeLex(putOperationLex(operation));
-                    return 0;
-                }
-                else
-                {
-                    _fileWork.WriteFile($"VIR1 ERROR: CheckOperation failed for '{operation}'");
-                    return 110;
-                }
-            }
-            return 0;
-        }
-
-        private bool CheckOperation()
-        {
-            if (stackCheckContVir.Count < 3)
-            {
-                _fileWork.WriteFile($"CheckOperation ERROR: Stack has {stackCheckContVir.Count} elements, need 3");
-                return false;
-            }
-
-            // ВАЖНО: Для правильной работы нужен порядок: t2, t1, op
-            // Потому что операции добавляются в стек ПОСЛЕ операндов
-
-            string t2 = stackCheckContVir.Pop();  // правый операнд
-            string t1 = stackCheckContVir.Pop();  // левый операнд
-            string op = stackCheckContVir.Pop();  // операция
-
-            string res = GetType(op, t1, t2);
-
-            _fileWork.WriteFile($"CheckOperation: t1={t1}, op={op}, t2={t2}, result={res}");
-
-            if (res != string.Empty)
-            {
-                stackCheckContVir.Push(res);
-                putPolizeLex(putOperationLex(op));
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        private int OPRD()
-        {
-            int code;
-            _fileWork.WriteFile($"OPRD START: currentLexValue = '{currentLexValue}'");
-
-            TempPath += "OPRD -> SLAG ";
-            code = SLAG();
-            if (code != 0) return code;
-
-            // Проверяем операции сложения/вычитания
-            while (currentLexValue == "plus" || currentLexValue == "min" || currentLexValue == "or")
-            {
-                _fileWork.WriteFile(TempPath + "OPRD -> " + currentLexValue + " ");
-                string operation = currentLexValue; // сохраняем операцию
-
-                GetCurrentLexem(); // переходим к следующему слагаемому
-
-                // Обрабатываем правый операнд
-                code = SLAG();
-                if (code != 0) return code;
-
-                // **ВАЖНО: Операция добавляется ПОСЛЕ обработки правого операнда**
-                // Но тип операции нужно проверить СЕЙЧАС
-                if (stackCheckContVir.Count < 2)
-                {
-                    _fileWork.WriteFile($"OPRD ERROR: Not enough operands for '{operation}'");
-                    return 111;
-                }
-
-                string t2 = stackCheckContVir.Pop();  // правый операнд
-                string t1 = stackCheckContVir.Pop();  // левый операнд
-                string res = GetType(operation, t1, t2);
-
-                _fileWork.WriteFile($"OPRD: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
-
-                if (res != string.Empty)
-                {
-                    stackCheckContVir.Push(res);
-                    putPolizeLex(putOperationLex(operation));
-                }
-                else
-                {
-                    _fileWork.WriteFile($"OPRD ERROR: Type mismatch for '{operation}' between {t1} and {t2}");
-                    return 111;
-                }
-
-                _fileWork.WriteFile($"OPRD: Performed {operation} -> {stackCheckContVir.Peek()}");
-            }
-
-            _fileWork.WriteFile($"OPRD END: currentLexValue = '{currentLexValue}'");
-            return 0;
-        }
-
-        private int SLAG()
-        {
-            int code;
-            _fileWork.WriteFile($"SLAG START: currentLexValue = '{currentLexValue}'");
-
-            TempPath += "SLAG -> MNOJ ";
-            code = MNOJ();
-            if (code != 0) return code;
-
-            // Проверяем операции умножения/деления
-            while (currentLexValue == "mult" || currentLexValue == "div" || currentLexValue == "and")
-            {
-                _fileWork.WriteFile(TempPath + "SLAG -> " + currentLexValue + " ");
-                string operation = currentLexValue; // сохраняем операцию
-
-                GetCurrentLexem(); // переходим к следующему множителю
-
-                // Обрабатываем правый операнд
-                code = MNOJ();
-                if (code != 0) return code;
-
-                // **ВАЖНО: Операция добавляется ПОСЛЕ обработки правого операнда**
-                // Но тип операции нужно проверить СЕЙЧАС
-                if (stackCheckContVir.Count < 2)
-                {
-                    _fileWork.WriteFile($"SLAG ERROR: Not enough operands for '{operation}'");
-                    return 112;
-                }
-
-                string t2 = stackCheckContVir.Pop();  // правый операнд
-                string t1 = stackCheckContVir.Pop();  // левый операнд
-                string res = GetType(operation, t1, t2);
-
-                _fileWork.WriteFile($"SLAG: CheckOperation: t1={t1}, op={operation}, t2={t2}, result={res}");
-
-                if (res != string.Empty)
-                {
-                    stackCheckContVir.Push(res);
-                    putPolizeLex(putOperationLex(operation));
-                }
-                else
-                {
-                    _fileWork.WriteFile($"SLAG ERROR: Type mismatch for '{operation}' between {t1} and {t2}");
-                    return 112;
-                }
-
-                _fileWork.WriteFile($"SLAG: Performed {operation} -> {stackCheckContVir.Peek()}");
-            }
-
-            _fileWork.WriteFile($"SLAG END: currentLexValue = '{currentLexValue}'");
-            return 0;
-        }
-
-        private int MNOJ()
-        {
-            PolizStruct temp;
-            int code;
-
-            _fileWork.WriteFile($"MNOJ START: currentLexValue = '{currentLexValue}'");
-
-            if (IsID())
-            {
-                _fileWork.WriteFile(TempPath + "MNOJ -> ID ");
-                code = ID();
-                if (code != 0) return code;
-
-                if (!CheckID())
-                {
-                    return 113;
-                }
-
-                // ФИКС: Добавляем тип идентификатора в стек
-                string idType = TID_temp[currentLex.numInTable].type;
-                stackCheckContVir.Push(idType);
-                _fileWork.WriteFile($"MNOJ: ID '{currentLexValue}' type = {idType} pushed to stack");
-
-                temp.classValue = currentLex.numTable;
-                temp.value = currentLex.numInTable;
-                temp.type = currentLexValue;
-                putPolizeLex(temp);
-
-                // ВАЖНО: Вызываем GetCurrentLexem() здесь, после обработки ID
-                GetCurrentLexem();
-                _fileWork.WriteFile($"MNOJ END (ID): currentLexValue = '{currentLexValue}'");
-                return 0;
-            }
-            else if (IsNumConst())
-            {
-                code = NUM();
-                _fileWork.WriteFile(TempPath + "MNOJ -> NUM ");
-                if (code != 0) return code;
-
-                _fileWork.WriteFile("-> " + currentLexValue + " ");
-                temp.classValue = currentLex.numTable;
-                temp.value = currentLex.numInTable;
-                temp.type = currentLexValue;
-                putPolizeLex(temp);
-
-                // ВАЖНО: Вызываем GetCurrentLexem() здесь, после обработки константы
-                GetCurrentLexem();
-                _fileWork.WriteFile($"MNOJ END (NUM): currentLexValue = '{currentLexValue}'");
-                return 0;
-            }
-            else if (currentLexValue == "false" || currentLexValue == "true")
-            {
-                _fileWork.WriteFile(TempPath + "MNOJ -> " + currentLexValue + " ");
-                stackCheckContVir.Push("$");
-                temp.classValue = currentLex.numTable;
-                temp.value = currentLex.numInTable;
-                temp.type = currentLexValue;
-                putPolizeLex(temp);
-
-                // ВАЖНО: Вызываем GetCurrentLexem() здесь
-                GetCurrentLexem();
-                _fileWork.WriteFile($"MNOJ END (bool): currentLexValue = '{currentLexValue}'");
-                return 0;
-            }
-            else if (currentLexValue == "~")
-            {
-                _fileWork.WriteFile(TempPath + "MNOJ -> UNARM -> ~ ");
-
-                // Сохраняем операцию "~" в стек для унарной операции
-                stackCheckContVir.Push("~");
-
-                GetCurrentLexem(); // Пропускаем "~"
-
-                code = UNARM();
-                if (code != 0) return code;
-
-                // Унарная операция уже обработана в UNARM()
-                _fileWork.WriteFile($"MNOJ END (unary): currentLexValue = '{currentLexValue}'");
-                return 0;
-            }
-            else if (currentLexValue == "(")
-            {
-                _fileWork.WriteFile(TempPath + "MNOJ -> ( ");
-                temp_str = TempPath;
-                GetCurrentLexem(); // Пропускаем "("
-
-                TempPath += "MNOJ -> VIR ";
-                code = VIR();
-                if (code != 0) return code;
-
-                _fileWork.WriteFile(temp_str + "MNOJ -> ) ");
-                if (currentLexValue != ")")
-                {
-                    return 21;
-                }
-
-                GetCurrentLexem(); // Пропускаем ")"
-                _fileWork.WriteFile($"MNOJ END (parentheses): currentLexValue = '{currentLexValue}'");
-                return 0;
-            }
-            else
-            {
-                _fileWork.WriteFile($"MNOJ ERROR: Unexpected token '{currentLexValue}'");
-                return 22;
-            }
-        }
         private int UNARM()
         {
             int code;
@@ -1822,32 +1688,9 @@ namespace compiler_prog
             code = MNOJ();
             if (code != 0) return code;
 
-            if (!CheckUnarOperation())
-            {
-                return 114;
-            }
-            return 0;
+            return 114;
         }
 
-        private int NUM()
-        {
-            if (CheckNum() == 0)
-            {
-                stackCheckContVir.Push("!");
-                return 0;
-            }
-            else if (CheckNum() == 1)
-            {
-                stackCheckContVir.Push("%");
-                return 0;
-            }
-            else
-            {
-                return 23;
-            }
-        }
-
-        #region Генерация кода
         private void SaveGeneratedCode(GeneratedCode generatedCode)
         {
             try
@@ -1858,9 +1701,7 @@ namespace compiler_prog
             }
             catch (Exception ex)
             {
-                _fileWork.WriteFile($"Ошибка сохранения кода: {ex.Message}");
             }
         }
-        #endregion
     }
 }

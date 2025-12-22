@@ -16,3 +16,9 @@
 *.db-shm
 
 *.db-wal
+
+bin/debug/*.txt
+
+debug/*.txt
+
+obj/Debug/compiler.csproj.FileListAbsolute.txt

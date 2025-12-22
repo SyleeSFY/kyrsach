@@ -20,23 +20,26 @@ namespace compiler_prog
         public List<string> Indentificators = new List<string>();
         public List<string> Constants = new List<string>();
 
-        // ОБНОВЛЕННЫЙ СПИСОК СЕРВИСНЫХ СЛОВ
-        public List<string> Service = new List<string>()  {
-            "program", "begin", "end",             // программа
-            "dim", "ass",                          // объявление и присваивание
-            "if", "then", "else",                  // условный оператор
-            "for", "to", "do",                     // цикл for
-            "while", "do",                         // цикл while (do уже есть)
-            "read", "write",                       // ввод/вывод
-            "%", "!", "$",                         // типы данных
-            "NE", "EQ", "LT", "LE", "GT", "GE",    // операции отношения
-            "plus", "min", "mult", "div",          // арифметические операции
-            "or", "and", "not",                    // логические операции
-            "true", "false"                        // логические константы
+        public List<string> Keywords = new List<string>()  {
+            "program", "begin", "end",             
+            "dim",                                 
+            "if", "then", "else",                  
+            "for", "to", "do",                    
+            "while",                               
+            "read", "write",                       
+            "%", "!", "$",                        
+            "true", "false"                        
         };
 
-        // ОБНОВЛЕННЫЙ СПИСОК РАЗДЕЛИТЕЛЕЙ
-        public List<string> Separators = new List<string>()  {
+        public readonly List<string> OPERATORS = new List<string>()
+        {
+            "NE", "EQ", "LT", "LE", "GT", "GE",
+            "plus", "min", "mult", "div",
+            "or", "and", "not",
+            "ass"
+        };
+
+        public List<string> Delimiters = new List<string>()  {
             ":", ",", ".", "@", "\\", "#", "(", ")", ";", "~"
         };
     }

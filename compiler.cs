@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace CompilerModelLang
 {
@@ -19,19 +20,34 @@ namespace CompilerModelLang
             data = new CompilerData();
             analysisObj = new LexicalAnalyzer(ref data);
             syntaxObj = new SyntaxAnalyzer(ref data);
-            data.Service
+
+            // Заполняем таблицу ключевых слов
+            data.Keywords
                 .Select((service, index) => new { Service = service, Index = index })
                 .ToList()
                 .ForEach(item =>
                 {
                     serviceGrid.Rows.Add(item.Index, item.Service);
                 });
-            data.Separators
+
+            // Заполняем таблицу разделителей
+            data.Delimiters
                 .Select((service, index) => new { Service = service, Index = index })
                 .ToList()
                 .ForEach(item =>
                 {
                     separatorsGrid.Rows.Add(item.Index, item.Service);
+                });
+
+            // ЗАПОЛНЯЕМ ТАБЛИЦУ ОПЕРАТОРОВ
+            data.OPERATORS
+                .Select((oper, index) => new { Operator = oper, Index = index })
+                .ToList()
+                .ForEach(item =>
+                {
+                    // Предполагаем, что у вас есть DataGridView с именем operatorsGrid
+                    // Если у вас другое имя, замените operatorsGrid на ваше
+                    dataOperators.Rows.Add(item.Index, item.Operator);
                 });
         }
 
@@ -66,15 +82,17 @@ namespace CompilerModelLang
                 data.LexicalValid = analysisObj.LexicalAnalyzerScan(textBox1.Text);
                 if (data.LexicalValid)
                 {
-                    data.LexOut.ForEach(x => resultString += "(" + x.numTable + "," + x.numInTable + ")");
+                    // Используем GetLexOutput() для получения результата
+                    resultString = analysisObj.GetLexOutput();
 
-                    // Генерация ячеек таблицы индентификаторов
+                    // Генерация ячеек таблицы идентификаторов
                     foreach (LexemStruct temp in data.TID)
                     {
                         indentGrid.Rows.Add(counterCell, temp.value);
                         counterCell++;
                     }
                     counterCell = 0;
+
                     // Генерация ячеек таблицы констант
                     foreach (string currentSymbol in data.Constants)
                     {
@@ -84,11 +102,12 @@ namespace CompilerModelLang
                         }
                         constantsGrid.Rows.Add(counterCell, currentSymbol);
                         counterCell++;
-
                     }
                 }
                 else
+                {
                     resultString = null;
+                }
 
                 textBox2.Text = resultString;
                 statusLabel.Text = data.LexicalStatus;
@@ -110,8 +129,7 @@ namespace CompilerModelLang
                 answerInt = syntaxObj.SyntaxStart();
                 if (answerInt == 0)
                 {
-                    // Формирование окна ПОЛИЗ - ИСПРАВЛЕННАЯ ВЕРСИЯ
-                    // В цикле форматирования ПОЛИЗа
+                    // Формирование окна ПОЛИЗ
                     for (int i = 0; i < syntaxObj.free; i++)
                     {
                         if (syntaxObj.OutputPoliz[i].classValue == 0) // метка
@@ -137,6 +155,9 @@ namespace CompilerModelLang
                     }
                     // Вывод в окно ПОЛИЗ
                     polizTextBox.Text = resultString;
+                    var generatedCode = syntaxObj.GetCodeGenerator();
+                    if (generatedCode != null) 
+                        codeGenerators.Text = generatedCode.Code;
                 }
                 statusLabel.Text = ErrorHandler(answerInt);
                 MessageBox.Show($"Syntax result: {answerInt}, POLIZ elements: {syntaxObj.free}", "Debug Info");
@@ -146,6 +167,7 @@ namespace CompilerModelLang
                 statusLabel.Text = "Синтаксический анализ: невозможно произвести анализ, лексический анализатор завершен с ошибкой.";
             }
         }
+
         private string ErrorHandler(int answer)
         {
             string predycat = null;
@@ -274,16 +296,17 @@ namespace CompilerModelLang
 
         private void StartInterpeter(object sender, EventArgs e)
         {
-
+            // Ваш код интерпретатора
         }
 
         private void exitApp(object sender, EventArgs e)
-            =>this.Close();
-
+        {
+            this.Close();
+        }
 
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-
+            // Обработка кликов по меню
         }
     }
 }

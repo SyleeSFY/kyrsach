@@ -56,6 +56,12 @@
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
+            this.groupBox7 = new System.Windows.Forms.GroupBox();
+            this.dataOperators = new System.Windows.Forms.DataGridView();
+            this.dataGridViewTextBoxColumn7 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn8 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.CsharpCode = new System.Windows.Forms.GroupBox();
+            this.codeGenerators = new System.Windows.Forms.TextBox();
             this.groupBoxInputFile.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -68,6 +74,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.indentGrid)).BeginInit();
             this.statusBar.SuspendLayout();
             this.groupBox6.SuspendLayout();
+            this.groupBox7.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataOperators)).BeginInit();
+            this.CsharpCode.SuspendLayout();
             this.SuspendLayout();
             // 
             // openFileDialog1
@@ -79,7 +88,7 @@
             this.groupBoxInputFile.Controls.Add(this.textBox1);
             this.groupBoxInputFile.Location = new System.Drawing.Point(325, 285);
             this.groupBoxInputFile.Name = "groupBoxInputFile";
-            this.groupBoxInputFile.Size = new System.Drawing.Size(369, 270);
+            this.groupBoxInputFile.Size = new System.Drawing.Size(540, 270);
             this.groupBoxInputFile.TabIndex = 1;
             this.groupBoxInputFile.TabStop = false;
             this.groupBoxInputFile.Text = "Исходный файл";
@@ -92,13 +101,13 @@
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
             this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox1.Size = new System.Drawing.Size(357, 248);
+            this.textBox1.Size = new System.Drawing.Size(528, 248);
             this.textBox1.TabIndex = 0;
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.textBox2);
-            this.groupBox1.Location = new System.Drawing.Point(325, 12);
+            this.groupBox1.Location = new System.Drawing.Point(502, 12);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(369, 270);
             this.groupBox1.TabIndex = 2;
@@ -123,7 +132,7 @@
             this.groupBox2.Size = new System.Drawing.Size(150, 270);
             this.groupBox2.TabIndex = 4;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Служебные слова";
+            this.groupBox2.Text = "Keywords";
             // 
             // serviceGrid
             // 
@@ -180,7 +189,7 @@
             this.groupBox3.Size = new System.Drawing.Size(150, 270);
             this.groupBox3.TabIndex = 5;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Разделители";
+            this.groupBox3.Text = "Delimiters";
             // 
             // separatorsGrid
             // 
@@ -237,7 +246,7 @@
             this.groupBox4.Size = new System.Drawing.Size(150, 270);
             this.groupBox4.TabIndex = 6;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Константы";
+            this.groupBox4.Text = "Constants";
             // 
             // constantsGrid
             // 
@@ -294,7 +303,7 @@
             this.groupBox5.Size = new System.Drawing.Size(150, 270);
             this.groupBox5.TabIndex = 7;
             this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Идентификаторы";
+            this.groupBox5.Text = "Identifiers";
             // 
             // indentGrid
             // 
@@ -348,7 +357,7 @@
             this.statusBar.Controls.Add(this.statusLabel);
             this.statusBar.Location = new System.Drawing.Point(13, 561);
             this.statusBar.Name = "statusBar";
-            this.statusBar.Size = new System.Drawing.Size(884, 73);
+            this.statusBar.Size = new System.Drawing.Size(1233, 73);
             this.statusBar.TabIndex = 8;
             this.statusBar.TabStop = false;
             this.statusBar.Text = "Статус программы";
@@ -366,9 +375,9 @@
             // groupBox6
             // 
             this.groupBox6.Controls.Add(this.polizTextBox);
-            this.groupBox6.Location = new System.Drawing.Point(700, 12);
+            this.groupBox6.Location = new System.Drawing.Point(877, 12);
             this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(197, 543);
+            this.groupBox6.Size = new System.Drawing.Size(369, 270);
             this.groupBox6.TabIndex = 9;
             this.groupBox6.TabStop = false;
             this.groupBox6.Text = "ПОЛИЗ";
@@ -380,8 +389,9 @@
             this.polizTextBox.Location = new System.Drawing.Point(6, 16);
             this.polizTextBox.Multiline = true;
             this.polizTextBox.Name = "polizTextBox";
-            this.polizTextBox.Size = new System.Drawing.Size(185, 521);
+            this.polizTextBox.Size = new System.Drawing.Size(358, 248);
             this.polizTextBox.TabIndex = 1;
+            this.polizTextBox.TabStop = false;
             // 
             // button1
             // 
@@ -409,15 +419,95 @@
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(259, 30);
             this.button3.TabIndex = 12;
-            this.button3.Text = "ПОЛИз";
+            this.button3.Text = "ПОЛИЗ";
             this.button3.UseVisualStyleBackColor = true;
             this.button3.Click += new System.EventHandler(this.StartSyntaxClick);
+            // 
+            // groupBox7
+            // 
+            this.groupBox7.Controls.Add(this.dataOperators);
+            this.groupBox7.Location = new System.Drawing.Point(331, 12);
+            this.groupBox7.Name = "groupBox7";
+            this.groupBox7.Size = new System.Drawing.Size(150, 270);
+            this.groupBox7.TabIndex = 6;
+            this.groupBox7.TabStop = false;
+            this.groupBox7.Text = "Operators";
+            // 
+            // dataOperators
+            // 
+            this.dataOperators.AllowUserToAddRows = false;
+            this.dataOperators.AllowUserToDeleteRows = false;
+            this.dataOperators.AllowUserToResizeColumns = false;
+            this.dataOperators.AllowUserToResizeRows = false;
+            this.dataOperators.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dataOperators.CausesValidation = false;
+            this.dataOperators.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            this.dataOperators.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataOperators.ColumnHeadersVisible = false;
+            this.dataOperators.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.dataGridViewTextBoxColumn7,
+            this.dataGridViewTextBoxColumn8});
+            this.dataOperators.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataOperators.Location = new System.Drawing.Point(3, 22);
+            this.dataOperators.MultiSelect = false;
+            this.dataOperators.Name = "dataOperators";
+            this.dataOperators.ReadOnly = true;
+            this.dataOperators.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            this.dataOperators.RowHeadersVisible = false;
+            this.dataOperators.RowHeadersWidth = 62;
+            this.dataOperators.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
+            this.dataOperators.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.dataOperators.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
+            this.dataOperators.Size = new System.Drawing.Size(144, 245);
+            this.dataOperators.TabIndex = 1;
+            this.dataOperators.TabStop = false;
+            // 
+            // dataGridViewTextBoxColumn7
+            // 
+            this.dataGridViewTextBoxColumn7.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dataGridViewTextBoxColumn7.HeaderText = "№";
+            this.dataGridViewTextBoxColumn7.MinimumWidth = 50;
+            this.dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
+            this.dataGridViewTextBoxColumn7.ReadOnly = true;
+            this.dataGridViewTextBoxColumn7.Width = 50;
+            // 
+            // dataGridViewTextBoxColumn8
+            // 
+            this.dataGridViewTextBoxColumn8.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dataGridViewTextBoxColumn8.HeaderText = "Символ";
+            this.dataGridViewTextBoxColumn8.MinimumWidth = 8;
+            this.dataGridViewTextBoxColumn8.Name = "dataGridViewTextBoxColumn8";
+            this.dataGridViewTextBoxColumn8.ReadOnly = true;
+            this.dataGridViewTextBoxColumn8.Width = 91;
+            // 
+            // CsharpCode
+            // 
+            this.CsharpCode.Controls.Add(this.codeGenerators);
+            this.CsharpCode.Location = new System.Drawing.Point(877, 285);
+            this.CsharpCode.Name = "CsharpCode";
+            this.CsharpCode.Size = new System.Drawing.Size(369, 270);
+            this.CsharpCode.TabIndex = 10;
+            this.CsharpCode.TabStop = false;
+            this.CsharpCode.Text = "Сгенерированный C#";
+            // 
+            // codeGenerators
+            // 
+            this.codeGenerators.BackColor = System.Drawing.SystemColors.HighlightText;
+            this.codeGenerators.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.codeGenerators.Location = new System.Drawing.Point(6, 22);
+            this.codeGenerators.Multiline = true;
+            this.codeGenerators.Name = "codeGenerators";
+            this.codeGenerators.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.codeGenerators.Size = new System.Drawing.Size(358, 239);
+            this.codeGenerators.TabIndex = 1;
             // 
             // compiler
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.SystemColors.HighlightText;
-            this.ClientSize = new System.Drawing.Size(914, 664);
+            this.ClientSize = new System.Drawing.Size(1258, 664);
+            this.Controls.Add(this.CsharpCode);
+            this.Controls.Add(this.groupBox7);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
@@ -453,6 +543,10 @@
             this.statusBar.PerformLayout();
             this.groupBox6.ResumeLayout(false);
             this.groupBox6.PerformLayout();
+            this.groupBox7.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dataOperators)).EndInit();
+            this.CsharpCode.ResumeLayout(false);
+            this.CsharpCode.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -488,5 +582,11 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.GroupBox groupBox7;
+        private System.Windows.Forms.DataGridView dataOperators;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn8;
+        private System.Windows.Forms.GroupBox CsharpCode;
+        private System.Windows.Forms.TextBox codeGenerators;
     }
 }
