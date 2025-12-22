@@ -17,4 +17,6 @@
 
 *.db-wal
 
-*.txt
+bin/debug/*.txt
+
+debug/*.txt
