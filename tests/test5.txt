@@ -1,0 +1,13 @@
+program
+i, sum : %;
+begin
+  sum ass 0
+  i ass 1
+  
+  while i LE 5 do
+    sum ass sum plus i
+    i ass i plus 1
+
+  
+  write(sum)
+end.
