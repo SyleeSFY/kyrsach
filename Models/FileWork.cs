@@ -16,7 +16,6 @@ namespace compiler_prog.Models
 
         public void WriteFile(string text_write)
         {
-            // Добавляем перевод строки в конце каждого сообщения
             text_write += Environment.NewLine;
             byte[] info = new UTF8Encoding(true).GetBytes(text_write);
             fs.Write(info, 0, info.Length);
