@@ -11,13 +11,13 @@ namespace compiler_prog.Models
         CSharp = 0
     }
 
-    public class GeneratedCode
+    public class Generator
     {
         public string Code { get; set; }
         public List<string> Warnings { get; set; }
         public List<string> Errors { get; set; }
 
-        public GeneratedCode()
+        public Generator()
         {
             Code = "";
             Warnings = new List<string>();

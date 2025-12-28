@@ -6,8 +6,8 @@ begin
   for i ass 1 to 5 do
 
       sum ass sum plus i 
-      @ write(i) 
-      @ write(sum)
+       @ write(i)
+       @ write(sum)
   
   write(sum)
 end.

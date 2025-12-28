@@ -10,7 +10,7 @@ namespace compiler_prog.Models
 
         public void CreateFile()
         {
-            string file_path = @"syntax_tree.txt";
+            string file_path = @"tree.txt";
             fs = File.Open(file_path, FileMode.Create);
         }
 

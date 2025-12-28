@@ -9,16 +9,16 @@ namespace compiler_prog
 {
     public class CodeGenerator
     {
-        private SyntaxAnalyzer _syntaxAnalyzer;
+        private Syntax _syntaxAnalyzer;
         private List<Lexem> _tid;
         private List<string> _constants;
         private Poliz[] _poliz;
         private int _polizLength;
 
-        public GeneratedCode GeneratedCode { get; private set; }
+        public Generator GeneratedCode { get; private set; }
         public TargetLanguage TargetLanguage { get; set; }
 
-        public CodeGenerator(SyntaxAnalyzer syntaxAnalyzer, List<Lexem> tid,
+        public CodeGenerator(Syntax syntaxAnalyzer, List<Lexem> tid,
             List<string> constants, Poliz[] poliz, int polizLength)
         {
             _syntaxAnalyzer = syntaxAnalyzer;
@@ -26,7 +26,7 @@ namespace compiler_prog
             _constants = constants;
             _poliz = poliz;
             _polizLength = polizLength;
-            GeneratedCode = new GeneratedCode();
+            GeneratedCode = new Generator();
             TargetLanguage = TargetLanguage.CSharp;
         }
 
@@ -247,9 +247,9 @@ namespace compiler_prog
             return instructions;
         }
 
-        public GeneratedCode GenerateCSharpCode()
+        public Generator GenerateCSharpCode()
         {
-            GeneratedCode = new GeneratedCode();
+            GeneratedCode = new Generator();
             try
             {
                 var sb = new StringBuilder();
@@ -289,7 +289,7 @@ namespace compiler_prog
             }
         }
 
-        public GeneratedCode GenerateCode()
+        public Generator GenerateCode()
         {
             return TargetLanguage == TargetLanguage.CSharp ? GenerateCSharpCode() : GenerateCSharpCode();
         }

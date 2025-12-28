@@ -10,18 +10,17 @@ namespace CompilerModelLang
     {
         private bool _fileOpen = false;
 
-        public CompilerData data;
-        public LexicalAnalyzer analysisObj;
-        public SyntaxAnalyzer syntaxObj;
+        public Data data;
+        public Lexical analysisObj;
+        public Syntax syntaxObj;
 
         public compiler()
         {
             InitializeComponent();
-            data = new CompilerData();
-            analysisObj = new LexicalAnalyzer(ref data);
-            syntaxObj = new SyntaxAnalyzer(ref data);
+            data = new Data();
+            analysisObj = new Lexical(ref data);
+            syntaxObj = new Syntax(ref data);
 
-            // Заполняем таблицу ключевых слов
             data.Keywords
                 .Select((service, index) => new { Service = service, Index = index })
                 .ToList()
@@ -30,7 +29,6 @@ namespace CompilerModelLang
                     serviceGrid.Rows.Add(item.Index, item.Service);
                 });
 
-            // Заполняем таблицу разделителей
             data.Delimiters
                 .Select((service, index) => new { Service = service, Index = index })
                 .ToList()
@@ -39,14 +37,11 @@ namespace CompilerModelLang
                     separatorsGrid.Rows.Add(item.Index, item.Service);
                 });
 
-            // ЗАПОЛНЯЕМ ТАБЛИЦУ ОПЕРАТОРОВ
             data.OPERATORS
                 .Select((oper, index) => new { Operator = oper, Index = index })
                 .ToList()
                 .ForEach(item =>
                 {
-                    // Предполагаем, что у вас есть DataGridView с именем operatorsGrid
-                    // Если у вас другое имя, замените operatorsGrid на ваше
                     dataOperators.Rows.Add(item.Index, item.Operator);
                 });
         }
@@ -160,7 +155,7 @@ namespace CompilerModelLang
                         codeGenerators.Text = generatedCode.Code;
                 }
                 statusLabel.Text = ErrorHandler(answerInt);
-                MessageBox.Show($"Syntax result: {answerInt}, POLIZ elements: {syntaxObj.free}", "Debug Info");
+                MessageBox.Show($"Syntax succes");
             }
             else
             {
@@ -296,7 +291,6 @@ namespace CompilerModelLang
 
         private void StartInterpeter(object sender, EventArgs e)
         {
-            // Ваш код интерпретатора
         }
 
         private void exitApp(object sender, EventArgs e)
@@ -306,7 +300,6 @@ namespace CompilerModelLang
 
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            // Обработка кликов по меню
         }
     }
 }

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static compiler_prog.CompilerData;
+using static compiler_prog.Data;
 
 namespace compiler_prog
 {
-    public class LexicalAnalyzer
+    public class Lexical
     {
         private readonly List<string> service = new List<string>();
         private readonly List<string> separators = new List<string>();
@@ -16,7 +16,7 @@ namespace compiler_prog
         private List<string> indentificators = new List<string>();
         private List<string> constants = new List<string>();
 
-        private CompilerData parentObj;
+        private Data parentObj;
 
         private char currentSymbol;
         private char previousSymbol;
@@ -34,7 +34,7 @@ namespace compiler_prog
 
         private StringBuilder lexOutput = new StringBuilder();
 
-        public LexicalAnalyzer(ref CompilerData obj)
+        public Lexical(ref Data obj)
         {
             parentObj = obj;
             this.service = parentObj.Keywords;
@@ -125,12 +125,10 @@ namespace compiler_prog
 
             lexOutput.Append($"({tableName},{numInTable})");
 
-            // Проверяем, нужно ли добавлять перенос строки ПОСЛЕ лексемы
             bool addNewLineAfter = false;
 
             if (tableNum == 1) // Если это ключевое слово
             {
-                // program и begin с пустой строкой после
                 if (isValue == "program" || isValue == "begin")
                 {
                     addNewLineAfter = true;

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using compiler_prog.Models;
-using static compiler_prog.CompilerData;
+using static compiler_prog.Data;
 
 namespace compiler_prog
 {
@@ -13,7 +13,8 @@ namespace compiler_prog
         StartNotWithProgram = 0,
     }
 
-    public class SyntaxAnalyzer
+    public class Syntax
+
     {
         private int labelCounter = 1;
         private CodeGenerator _codeGenerator;
@@ -21,8 +22,8 @@ namespace compiler_prog
         private Lexem currentLex;
         private string currentLexValue;
         private int counterSLexem;
-        private CompilerData parentObj;
-        private SemanticAnalyzer semanticAnalyzer;
+        private Data parentObj;
+        private Semantic semanticAnalyzer;
 
         // Для построения правил
         private List<string> rulePath = new List<string>();
@@ -31,12 +32,12 @@ namespace compiler_prog
         public Poliz[] OutputPoliz = new Poliz[1000];
         public int free = 0;
 
-        public SyntaxAnalyzer(ref CompilerData obj)
+        public Syntax(ref Data obj)
         {
             parentObj = obj;
             counterSLexem = 0;
             _fileWork = new FileWork();
-            semanticAnalyzer = new SemanticAnalyzer(ref obj);
+            semanticAnalyzer = new Semantic(ref obj);
         }
 
         private void BeginRule(string ruleName)
@@ -226,7 +227,7 @@ namespace compiler_prog
             return answer;
         }
 
-        public GeneratedCode GetCodeGenerator()
+        public Generator GetCodeGenerator()
         {
             if (_codeGenerator == null)
                 return null;
@@ -529,6 +530,8 @@ namespace compiler_prog
         /// Обработка выражений
         /// </summary>
         /// <returns></returns>
+       
+        //<выражение> → <операнд> <выражение'>
         private int VIR()
         {
             int code;
@@ -547,6 +550,7 @@ namespace compiler_prog
             return 0;
         }
 
+        //<выражение'> → <операции_отношения> <операнд> <выражение'> | ε
         private int VIR1()
         {
             int code;
@@ -590,6 +594,7 @@ namespace compiler_prog
             return 0;
         }
 
+        //<операнд> → <слагаемое> <операнд'>
         private int OPRD()
         {
             int code;
@@ -632,6 +637,54 @@ namespace compiler_prog
             return 0;
         }
 
+        //<операнд'> → <операции_группы_сложения> <слагаемое> <операнд'> | ε
+        private int OPRD1()
+        {
+            int code;
+            AddToRulePath("SLAG");
+            code = SLAG();
+            if (code != 0) return code;
+
+            while (currentLexValue == "plus" || currentLexValue == "min" || currentLexValue == "or")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                string operation = currentLexValue;
+
+                GetCurrentLexem();
+
+                AddToRulePath("SLAG");
+                code = SLAG();
+                if (code != 0) return code;
+
+                if (semanticAnalyzer.stackCheckContVir.Count < 2)
+                {
+                    return 111;
+                }
+
+                string t2 = semanticAnalyzer.PopTypeFromStack();
+                string t1 = semanticAnalyzer.PopTypeFromStack();
+                string res = semanticAnalyzer.GetOperationResultType(operation, t1, t2);
+
+                if (!string.IsNullOrEmpty(res))
+                {
+                    semanticAnalyzer.PushTypeToStack(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    return 111;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// *, /, and
+        /// </summary>
+        /// <returns></returns>
+        //<слагаемое> → <множитель> <слагаемое'>
         private int SLAG()
         {
             int code;
@@ -674,10 +727,77 @@ namespace compiler_prog
             return 0;
         }
 
+        //<слагаемое'> → <операции_умножения> <множитель> <слагаемое'> | ε
+        private int SLAG1()
+        {
+            int code;
+            AddToRulePath("MNOJ");
+            code = MNOJ();
+            if (code != 0) return code;
+
+            while (currentLexValue == "mult" || currentLexValue == "div" || currentLexValue == "and")
+            {
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+                string operation = currentLexValue;
+
+                GetCurrentLexem();
+
+                AddToRulePath("MNOJ");
+                code = MNOJ();
+                if (code != 0) return code;
+
+                if (semanticAnalyzer.stackCheckContVir.Count < 2)
+                {
+                    return 112;
+                }
+
+                string t2 = semanticAnalyzer.PopTypeFromStack();
+                string t1 = semanticAnalyzer.PopTypeFromStack();
+                string res = semanticAnalyzer.GetOperationResultType(operation, t1, t2);
+
+                if (!string.IsNullOrEmpty(res))
+                {
+                    semanticAnalyzer.PushTypeToStack(res);
+                    putPolizeLex(putOperationLex(operation));
+                }
+                else
+                {
+                    return 112;
+                }
+            }
+
+            return 0;
+        }
+
+        //<множитель> → ID | NUM | true | false | ( <выражение> )
         private int MNOJ()
         {
             Poliz temp;
             int code;
+
+            if (currentLexValue == "~") 
+            {
+                AddToRulePath("not");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+
+                code = MNOJ();  // ← not M
+                if (code != 0) return code;
+
+                if (semanticAnalyzer.stackCheckContVir.Count > 0)
+                {
+                    string type = semanticAnalyzer.PopTypeFromStack();
+                    if (type != "$")
+                    {
+                        return 115; // Ошибка: not применим только к bool
+                    }
+                    semanticAnalyzer.PushTypeToStack("$");
+                }
+
+                putPolizeLex(putOperationLex("not"));
+                return 0;
+            }
 
             if (IsID())
             {
@@ -1214,7 +1334,7 @@ namespace compiler_prog
             return temp;
         }
 
-        private void SaveGeneratedCode(GeneratedCode generatedCode)
+        private void SaveGeneratedCode(Generator generatedCode)
         {
             try
             {

@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using static compiler_prog.CompilerData;
+using static compiler_prog.Data;
 
 namespace compiler_prog
 {
-    public class SemanticAnalyzer
+    public class Semantic
     {
-        private CompilerData parentObj;
+        private Data parentObj;
         public List<Lexem> TID_temp = new List<Lexem>();
         public Stack<string> stackCheckContVir = new Stack<string>();
         private Stack<int> stackCheckDeclare = new Stack<int>();
 
-        public SemanticAnalyzer(ref CompilerData obj)
+        public Semantic(ref Data obj)
         {
             parentObj = obj;
             TID_temp = parentObj.TID.ToList();
