@@ -13,9 +13,9 @@ namespace compiler_prog
         public string SyntaxStatus;
         public string SemanticStatus;
 
-        public PolizStruct[] PolizOut = new PolizStruct[1000];
-        public List<LexemStruct> LexOut = new List<LexemStruct>();
-        public List<LexemStruct> TID = new List<LexemStruct>();
+        public Poliz[] PolizOut = new Poliz[1000];
+        public List<Lexem> LexOut = new List<Lexem>();
+        public List<Lexem> TID = new List<Lexem>();
 
         public List<string> Indentificators = new List<string>();
         public List<string> Constants = new List<string>();

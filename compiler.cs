@@ -86,7 +86,7 @@ namespace CompilerModelLang
                     resultString = analysisObj.GetLexOutput();
 
                     // Генерация ячеек таблицы идентификаторов
-                    foreach (LexemStruct temp in data.TID)
+                    foreach (Lexem temp in data.TID)
                     {
                         indentGrid.Rows.Add(counterCell, temp.value);
                         counterCell++;
