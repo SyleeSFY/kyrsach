@@ -87,17 +87,16 @@ namespace compiler_prog
             if (currentLexValue != "program")
                 return 1;
 
-            AddToRulePath("program");
+            AddToRulePath("P");
             WriteRuleIfComplete();
             GetCurrentLexem();
 
             // Проверяем, есть ли идентификаторы после program
             if (IsID())
             {
-                // ВАРИАНТ 1: После program сразу идут идентификаторы (i, sum : %;)
                 semanticAnalyzer.PushDeclarationToStack(currentLex.numInTable);
 
-                AddToRulePath("ID");
+                AddToRulePath("I");
                 WriteRuleIfComplete();
                 GetCurrentLexem();
 
@@ -113,7 +112,7 @@ namespace compiler_prog
 
                     semanticAnalyzer.PushDeclarationToStack(currentLex.numInTable);
 
-                    AddToRulePath("ID");
+                    AddToRulePath("I");
                     WriteRuleIfComplete();
                     GetCurrentLexem();
                 }
@@ -148,7 +147,6 @@ namespace compiler_prog
                 WriteRuleIfComplete();
                 GetCurrentLexem();
 
-                // После точки с запятой может быть begin или блок описаний
                 if (currentLexValue == "begin")
                 {
                     goto process_begin;
@@ -156,12 +154,9 @@ namespace compiler_prog
             }
             else if (currentLexValue == "begin")
             {
-                // ВАРИАНТ 2: После program сразу begin
                 goto process_begin;
             }
 
-            // ВАРИАНТ 3: После program идет блок описаний (как во втором примере)
-            // Переходим к обработке описаний через метод DESC
             code = DESC();
             if (code != 0) return code;
 
@@ -273,8 +268,8 @@ namespace compiler_prog
             while (IsID())
             {
                 CompleteRule();
-                BeginRule("DESC");
-                AddToRulePath("I1");
+                BeginRule("D");
+                //AddToRulePath("I");
                 code = I1();
                 if (code != 0) return code;
 
@@ -312,7 +307,7 @@ namespace compiler_prog
         {
             int code;
 
-            AddToRulePath("ID");
+            AddToRulePath("I");
             code = ID();
             if (code != 0) return code;
 
@@ -404,42 +399,42 @@ namespace compiler_prog
             else if (IsID())
             {
                 CompleteRule();
-                BeginRule("LET");
+                BeginRule("S");
                 int result = ProcessAssignment();
                 return result;
             }
             else if (currentLexValue == "if")
             {
                 CompleteRule();
-                BeginRule("IFEL");
+                BeginRule("U");
                 int result = IFEL();
                 return result;
             }
             else if (currentLexValue == "for")
             {
                 CompleteRule();
-                BeginRule("FIXLO");
+                BeginRule("L");
                 int result = FIXLO();
                 return result;
             }
             else if (currentLexValue == "while")
             {
                 CompleteRule();
-                BeginRule("IFLO");
+                BeginRule("L");
                 int result = IFLO();
                 return result;
             }
             else if (currentLexValue == "read")
             {
                 CompleteRule();
-                BeginRule("INPU");
+                BeginRule("R");
                 int result = INPU();
                 return result;
             }
             else if (currentLexValue == "write")
             {
                 CompleteRule();
-                BeginRule("OUPU");
+                BeginRule("W");
                 int result = OUPU();
                 return result;
             }
@@ -480,7 +475,7 @@ namespace compiler_prog
             string currentID = currentLexValue;
             int currentIDIndex = currentLex.numInTable;
 
-            AddToRulePath("ID");
+            AddToRulePath("I");
             code = ID();
             if (code != 0) return code;
 
@@ -508,7 +503,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("VIR");
+            AddToRulePath("E");
             code = VIR();
             if (code != 0) return code;
 
@@ -539,7 +534,7 @@ namespace compiler_prog
         private int VIR()
         {
             int code;
-            AddToRulePath("OPRD");
+            AddToRulePath("O");
             code = OPRD();
             if (code != 0) return code;
 
@@ -602,7 +597,7 @@ namespace compiler_prog
         private int OPRD()
         {
             int code;
-            AddToRulePath("SLAG");
+            AddToRulePath("C");
             code = SLAG();
             if (code != 0) return code;
 
@@ -614,7 +609,7 @@ namespace compiler_prog
 
                 GetCurrentLexem();
 
-                AddToRulePath("SLAG");
+                AddToRulePath("C");
                 code = SLAG();
                 if (code != 0) return code;
 
@@ -645,7 +640,7 @@ namespace compiler_prog
         private int OPRD1()
         {
             int code;
-            AddToRulePath("SLAG");
+            AddToRulePath("C");
             code = SLAG();
             if (code != 0) return code;
 
@@ -657,7 +652,7 @@ namespace compiler_prog
 
                 GetCurrentLexem();
 
-                AddToRulePath("SLAG");
+                AddToRulePath("C");
                 code = SLAG();
                 if (code != 0) return code;
 
@@ -692,7 +687,7 @@ namespace compiler_prog
         private int SLAG()
         {
             int code;
-            AddToRulePath("MNOJ");
+            AddToRulePath("B");
             code = MNOJ();
             if (code != 0) return code;
 
@@ -704,7 +699,7 @@ namespace compiler_prog
 
                 GetCurrentLexem();
 
-                AddToRulePath("MNOJ");
+                AddToRulePath("B");
                 code = MNOJ();
                 if (code != 0) return code;
 
@@ -735,7 +730,7 @@ namespace compiler_prog
         private int SLAG1()
         {
             int code;
-            AddToRulePath("MNOJ");
+            AddToRulePath("B");
             code = MNOJ();
             if (code != 0) return code;
 
@@ -747,7 +742,7 @@ namespace compiler_prog
 
                 GetCurrentLexem();
 
-                AddToRulePath("MNOJ");
+                AddToRulePath("B");
                 code = MNOJ();
                 if (code != 0) return code;
 
@@ -805,7 +800,7 @@ namespace compiler_prog
 
             if (IsID())
             {
-                AddToRulePath("ID");
+                AddToRulePath("I");
                 code = ID();
                 if (code != 0) return code;
 
@@ -825,7 +820,7 @@ namespace compiler_prog
             }
             else if (IsNumConst())
             {
-                AddToRulePath("NUM");
+                AddToRulePath("N");
 
                 int checkResult = semanticAnalyzer.CheckNumericConstant(currentLexValue);
                 if (checkResult != 0) return checkResult;
@@ -864,7 +859,7 @@ namespace compiler_prog
                 WriteRuleIfComplete();
                 GetCurrentLexem();
 
-                AddToRulePath("VIR");
+                AddToRulePath("E");
                 code = VIR();
                 if (code != 0) return code;
 
@@ -892,7 +887,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("VIR");
+            AddToRulePath("E");
             code = VIR();
             if (code != 0) return code;
 
@@ -919,7 +914,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("OPER");
+            AddToRulePath("O");
             code = OPER();
             if (code != 0) return code;
 
@@ -937,7 +932,7 @@ namespace compiler_prog
 
                 GetCurrentLexem();
 
-                AddToRulePath("OPER");
+                AddToRulePath("O");
                 code = OPER();
                 if (code != 0) return code;
 
@@ -971,7 +966,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("LET");
+            AddToRulePath("S");
             code = ProcessAssignment();
             if (code != 0) return code;
 
@@ -1007,7 +1002,7 @@ namespace compiler_prog
             tempVarI.type = "i";
             putPolizeLex(tempVarI);
 
-            AddToRulePath("VIR");
+            AddToRulePath("E");
             code = VIR();
             if (code != 0) return code;
 
@@ -1036,7 +1031,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("OPER");
+            AddToRulePath("O");
             code = OPER();
             if (code != 0) return code;
 
@@ -1098,7 +1093,7 @@ namespace compiler_prog
             int loopStartLabelNum = labelCounter;
             putPolizeLex(makePolizeLabel());
 
-            AddToRulePath("VIR");
+            AddToRulePath("E");
             code = VIR();
             if (code != 0) return code;
 
@@ -1160,7 +1155,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("ID");
+            AddToRulePath("I");
             code = ID();
             if (code != 0) return code;
 
@@ -1183,7 +1178,7 @@ namespace compiler_prog
 
                 if (IsID())
                 {
-                    AddToRulePath("ID");
+                    AddToRulePath("I");
                     code = ID();
                     if (code != 0) return code;
 
@@ -1231,7 +1226,7 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
-            AddToRulePath("VIR");
+            AddToRulePath("E");
             code = VIR();
             if (code != 0) return code;
 
@@ -1246,7 +1241,7 @@ namespace compiler_prog
                 WriteRuleIfComplete();
                 GetCurrentLexem();
 
-                AddToRulePath("VIR");
+                AddToRulePath("E");
                 code = VIR();
                 if (code != 0) return code;
 
