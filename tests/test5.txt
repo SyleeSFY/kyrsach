@@ -1,13 +1,13 @@
 program
 i, sum : %;
 begin
-  sum ass 0
-  i ass 1
+  sum ass 0;
   
-  while i LE 5 do
-    sum ass sum plus i
-    i ass i plus 1
+  if sum GE 6 then
+    i ass 5;
+  else
+    write("error");
 
-  
-  write(sum)
+  write("test");
+
 end.
