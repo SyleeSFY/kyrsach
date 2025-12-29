@@ -951,6 +951,17 @@ namespace compiler_prog
             return 0;
         }
 
+        private int UnarOper()
+        {
+            int code;
+            GetCurrentLexem();
+            code = MNOJ();
+            if (code != 0) return code;
+
+            return 114;
+        }
+
+
         private int FIXLO()
         {
             int falseJumpPos;
