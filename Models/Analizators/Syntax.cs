@@ -1434,6 +1434,45 @@ namespace compiler_prog
             return symbol >= 'a' && symbol <= 'z';
         }
 
+        private int ProcessBinaryNumber()
+        {
+           
+            if (currentLexValue.StartsWith("0b") || currentLexValue.EndsWith("b"))
+            {
+                string binaryStr = currentLexValue.Replace("0b", "").Replace("b", "");
+                currentLex.numTable = 3; // NUM
+                return 0;
+            }
+            return 1; // Не двоичное число
+        }
+
+        private int ProcessOctalNumber()
+        {
+            // Должен обрабатывать числа вида 0o777 или 0777
+            if (currentLexValue.StartsWith("0o") ||
+                (currentLexValue.StartsWith("0") && currentLexValue.Length > 1))
+            {
+                // Фиктивная проверка формата
+                string octalStr = currentLexValue.Replace("0o", "");
+                currentLex.numTable = 3; // NUM
+                return 0;
+            }
+            return 1; // Не восьмеричное число
+        }
+
+        //  метод для обработки шестнадцатеричных чисел
+        private int ProcessHexadecimalNumber()
+        {
+
+            if (currentLexValue.StartsWith("0x"))
+            {
+                string hexStr = currentLexValue.Substring(2);
+                currentLex.numTable = 3; // NUM
+                return 0;
+            }
+            return 1; // Не шестнадцатеричное число
+        }
+
         private int IsIDAlphabet()
         {
             if (string.IsNullOrEmpty(currentLexValue))
