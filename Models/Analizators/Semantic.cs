@@ -15,39 +15,39 @@ namespace compiler_prog
         public Semantic(ref Data obj)
         {
             parentObj = obj;
-            TID_temp = parentObj.TID.ToList();
+            TID_temp = new List<Lexem>(parentObj.TID);
         }
 
         public void Initialize()
         {
             stackCheckContVir.Clear();
             stackCheckDeclare.Clear();
-            TID_temp = parentObj.TID.ToList();
+            TID_temp = new List<Lexem>(parentObj.TID);
         }
 
-        // Методы для работы с идентификаторами
         public bool DeclareIdentifier(int number, string type)
         {
             if (number < 0 || number >= TID_temp.Count)
                 return false;
 
-            Lexem temp;
-            if (TID_temp[number].numInTable == number)
+            if (TID_temp[number].isDeclared)
             {
-                if (TID_temp[number].isDeclared)
-                {
-                    return false; // Уже объявлен
-                }
-                else
-                {
-                    temp = TID_temp[number];
-                    temp.isDeclared = true;
-                    temp.type = type;
-                    TID_temp[number] = temp;
-                    return true;
-                }
+                return false; // Уже объявлен
             }
-            return false;
+
+            // Создаем новую структуру с обновленными значениями
+            Lexem updatedLexem = new Lexem
+            {
+                numTable = TID_temp[number].numTable,
+                numInTable = TID_temp[number].numInTable,
+                value = TID_temp[number].value,
+                isDeclared = true,
+                type = type
+            };
+
+            // Заменяем в списке
+            TID_temp[number] = updatedLexem;
+            return true;
         }
 
         public bool CheckIdentifierDeclared(int identifierIndex)
@@ -80,7 +80,6 @@ namespace compiler_prog
             return string.Empty;
         }
 
-        // Методы для работы со стеком объявлений
         public void PushDeclarationToStack(int identifierIndex)
         {
             stackCheckDeclare.Push(identifierIndex);
@@ -105,7 +104,6 @@ namespace compiler_prog
             return stackCheckDeclare.Count > 0;
         }
 
-        // Метод для объявления всех идентификаторов из стека
         public bool DeclareAllIdentifiersInStack(string type)
         {
             bool success = true;
@@ -122,24 +120,23 @@ namespace compiler_prog
             return success;
         }
 
-        // Методы для работы с константами
         public int CheckNumberType(string numberValue)
         {
             if (IsBinary(numberValue) || IsOctal(numberValue) || IsHexadecimal(numberValue))
             {
-                return 1; // Целое
+                return 1;
             }
             else if (IsDecimal(numberValue))
             {
-                return 1; // Целое
+                return 1;
             }
             else if (IsReal(numberValue))
             {
-                return 0; // Вещественное
+                return 0;
             }
             else
             {
-                return 21; // Ошибка
+                return 21;
             }
         }
 
@@ -148,11 +145,9 @@ namespace compiler_prog
             if (string.IsNullOrEmpty(value))
                 return false;
 
-            // Проверяем, содержит ли число точку или экспоненту
             bool hasDot = value.Contains('.');
             bool hasExp = value.ToLower().Contains('e');
 
-            // Если есть точка или экспонента, это вещественное число
             if (hasDot || hasExp)
                 return true;
 
@@ -242,9 +237,14 @@ namespace compiler_prog
             return false;
         }
 
-        // Методы для работы с типами операций
         public string GetOperationResultType(string operation, string type1, string type2)
         {
+            // Для ass (присваивание)
+            if (operation == "ass" || operation == "=")
+            {
+                return type2;
+            }
+
             if (operation == "plus" || operation == "min")
             {
                 if (type1 == "%" && type2 == "%")
@@ -328,7 +328,6 @@ namespace compiler_prog
             return string.Empty;
         }
 
-        // Методы для работы со стеком типов
         public void PushTypeToStack(string type)
         {
             stackCheckContVir.Push(type);
@@ -353,7 +352,6 @@ namespace compiler_prog
             string t2 = stackCheckContVir.Pop();
             string t1 = stackCheckContVir.Pop();
 
-            // Простая проверка на равенство типов
             return t1 == t2;
         }
 
@@ -368,43 +366,37 @@ namespace compiler_prog
             return type == "$";
         }
 
-        // Метод для проверки идентификаторов в выражении
         public int CheckIdentifierInExpression(Lexem identifier)
         {
             if (!CheckIdentifierDeclared(identifier.numInTable))
             {
-                return 113; // Идентификатор не объявлен
+                return 113;
             }
             return 0;
         }
 
-        // Метод для проверки числовой константы
         public int CheckNumericConstant(string value)
         {
             if (string.IsNullOrEmpty(value))
                 return 23;
 
-            // Если это true/false
             if (value == "true" || value == "false")
                 return 0;
 
-            // Проверяем все возможные форматы чисел
             if (IsReal(value) || IsBinary(value) || IsOctal(value) ||
                 IsDecimal(value) || IsHexadecimal(value))
             {
                 return 0;
             }
 
-            // Пробуем распарсить как double
             if (double.TryParse(value, out _))
             {
                 return 0;
             }
 
-            return 23; // Ошибка
+            return 23;
         }
 
-        // Метод для очистки всех данных
         public void ClearAll()
         {
             stackCheckContVir.Clear();
@@ -412,7 +404,6 @@ namespace compiler_prog
             TID_temp.Clear();
         }
 
-        // Метод для получения типа числовой константы
         public string GetConstantType(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -424,7 +415,7 @@ namespace compiler_prog
             if (IsReal(value))
                 return "!";
 
-            return "%"; // По умолчанию целое
+            return "%";
         }
     }
 }

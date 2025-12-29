@@ -14,7 +14,6 @@ namespace compiler_prog
     }
 
     public class Syntax
-
     {
         private int labelCounter = 1;
         private CodeGenerator _codeGenerator;
@@ -92,9 +91,81 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
+            // Проверяем, есть ли идентификаторы после program
+            if (IsID())
+            {
+                // ВАРИАНТ 1: После program сразу идут идентификаторы (i, sum : %;)
+                semanticAnalyzer.PushDeclarationToStack(currentLex.numInTable);
+
+                AddToRulePath("ID");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+
+                // Обработка дополнительных переменных через запятую
+                while (currentLexValue == ",")
+                {
+                    AddToRulePath(",");
+                    WriteRuleIfComplete();
+                    GetCurrentLexem();
+
+                    if (!IsID())
+                        return 6;
+
+                    semanticAnalyzer.PushDeclarationToStack(currentLex.numInTable);
+
+                    AddToRulePath("ID");
+                    WriteRuleIfComplete();
+                    GetCurrentLexem();
+                }
+
+                if (currentLexValue != ":")
+                    return 4;
+
+                AddToRulePath(":");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+
+                // Тип переменных
+                if (currentLexValue != "%" && currentLexValue != "!" && currentLexValue != "$")
+                    return 5;
+
+                AddToRulePath(currentLexValue);
+                WriteRuleIfComplete();
+
+                string type = currentLexValue;
+                GetCurrentLexem();
+
+                // Объявляем все переменные с указанным типом
+                if (!semanticAnalyzer.DeclareAllIdentifiersInStack(type))
+                {
+                    return 101; // Ошибка повторного объявления
+                }
+
+                if (currentLexValue != ";")
+                    return 4;
+
+                AddToRulePath(";");
+                WriteRuleIfComplete();
+                GetCurrentLexem();
+
+                // После точки с запятой может быть begin или блок описаний
+                if (currentLexValue == "begin")
+                {
+                    goto process_begin;
+                }
+            }
+            else if (currentLexValue == "begin")
+            {
+                // ВАРИАНТ 2: После program сразу begin
+                goto process_begin;
+            }
+
+            // ВАРИАНТ 3: После program идет блок описаний (как во втором примере)
+            // Переходим к обработке описаний через метод DESC
             code = DESC();
             if (code != 0) return code;
 
+            process_begin:
             if (currentLexValue != "begin")
             {
                 return 2;
@@ -106,8 +177,15 @@ namespace compiler_prog
             WriteRuleIfComplete();
             GetCurrentLexem();
 
+            // Обработка операторов
             while (currentLexValue != "end" && currentLexValue != "⟂")
             {
+                if (currentLexValue == "@")
+                {
+                    GetCurrentLexem();
+                    continue;
+                }
+
                 code = OPER();
                 if (code != 0) return code;
 
@@ -187,85 +265,11 @@ namespace compiler_prog
             return 0;
         }
 
-        private void GetCurrentLexem()
-        {
-            if (counterSLexem < parentObj.LexOut.Count)
-            {
-                currentLex = parentObj.LexOut[counterSLexem];
-                currentLexValue = currentLex.value;
-                counterSLexem++;
-            }
-            else
-            {
-                currentLex.value = "⟂";
-                currentLexValue = "⟂";
-            }
-        }
-
-        public int SyntaxStart()
-        {
-            int answer;
-            counterSLexem = 0;
-            semanticAnalyzer.Initialize();
-            Array.Clear(OutputPoliz, 0, OutputPoliz.Length);
-            free = 0;
-            labelCounter = 1;
-            rulePath.Clear();
-            lastWrittenRule = "";
-            _fileWork.CreateFile();
-            answer = StartProgram();
-
-            if (answer == 0)
-            {
-                _codeGenerator = new CodeGenerator(this, semanticAnalyzer.TID_temp,
-                    parentObj.Constants, OutputPoliz, free);
-                var generatedCode = _codeGenerator.GenerateCode();
-                SaveGeneratedCode(generatedCode);
-            }
-
-            _fileWork.Close();
-            return answer;
-        }
-
-        public Generator GetCodeGenerator()
-        {
-            if (_codeGenerator == null)
-                return null;
-            return _codeGenerator.GenerateCode();
-        }
-
-        private bool IsID()
-        {
-            return currentLex.numTable == 4;
-        }
-
-        private bool IsNumConst()
-        {
-            return currentLex.numTable == 3;
-        }
-
-        private bool IsLetterAlphabet(char symbol)
-        {
-            symbol = char.ToLower(symbol);
-            return symbol >= 'a' && symbol <= 'z';
-        }
-
-        private int IsIDAlphabet()
-        {
-            for (int i = 1; i < currentLexValue.Length; i++)
-            {
-                if (!char.IsDigit(currentLexValue[i]) && !IsLetterAlphabet(currentLexValue[i]))
-                {
-                    return 7;
-                }
-            }
-            return 0;
-        }
-
         private int DESC()
         {
             int code;
 
+            // Обрабатываем объявления пока есть идентификаторы
             while (IsID())
             {
                 CompleteRule();
@@ -530,7 +534,7 @@ namespace compiler_prog
         /// Обработка выражений
         /// </summary>
         /// <returns></returns>
-       
+
         //<выражение> → <операнд> <выражение'>
         private int VIR()
         {
@@ -776,7 +780,7 @@ namespace compiler_prog
             Poliz temp;
             int code;
 
-            if (currentLexValue == "~") 
+            if (currentLexValue == "~")
             {
                 AddToRulePath("not");
                 WriteRuleIfComplete();
@@ -1344,7 +1348,105 @@ namespace compiler_prog
             }
             catch (Exception ex)
             {
+                // Обработка ошибки сохранения
             }
+        }
+
+        private void GetCurrentLexem()
+        {
+            // Исправленный метод без бесконечного цикла
+            if (counterSLexem < parentObj.LexOut.Count)
+            {
+                currentLex = parentObj.LexOut[counterSLexem];
+                currentLexValue = currentLex.value;
+                counterSLexem++;
+
+                // Пропускаем пробельные символы, если они есть в списке лексем
+                while (currentLexValue == " " || currentLexValue == "\n" ||
+                       currentLexValue == "\r" || currentLexValue == "\t")
+                {
+                    if (counterSLexem < parentObj.LexOut.Count)
+                    {
+                        currentLex = parentObj.LexOut[counterSLexem];
+                        currentLexValue = currentLex.value;
+                        counterSLexem++;
+                    }
+                    else
+                    {
+                        currentLex.value = "⟂";
+                        currentLexValue = "⟂";
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                currentLex.value = "⟂";
+                currentLexValue = "⟂";
+            }
+        }
+
+        public int SyntaxStart()
+        {
+            int answer;
+            counterSLexem = 0;
+            semanticAnalyzer.Initialize();
+            Array.Clear(OutputPoliz, 0, OutputPoliz.Length);
+            free = 0;
+            labelCounter = 1;
+            rulePath.Clear();
+            lastWrittenRule = "";
+            _fileWork.CreateFile();
+            answer = StartProgram();
+
+            if (answer == 0)
+            {
+                _codeGenerator = new CodeGenerator(this, semanticAnalyzer.TID_temp,
+                    parentObj.Constants, OutputPoliz, free);
+                var generatedCode = _codeGenerator.GenerateCode();
+                SaveGeneratedCode(generatedCode);
+            }
+
+            _fileWork.Close();
+            return answer;
+        }
+
+        public Generator GetCodeGenerator()
+        {
+            if (_codeGenerator == null)
+                return null;
+            return _codeGenerator.GenerateCode();
+        }
+
+        private bool IsID()
+        {
+            return currentLex.numTable == 4;
+        }
+
+        private bool IsNumConst()
+        {
+            return currentLex.numTable == 3;
+        }
+
+        private bool IsLetterAlphabet(char symbol)
+        {
+            symbol = char.ToLower(symbol);
+            return symbol >= 'a' && symbol <= 'z';
+        }
+
+        private int IsIDAlphabet()
+        {
+            if (string.IsNullOrEmpty(currentLexValue))
+                return 7;
+
+            for (int i = 1; i < currentLexValue.Length; i++)
+            {
+                if (!char.IsDigit(currentLexValue[i]) && !IsLetterAlphabet(currentLexValue[i]))
+                {
+                    return 7;
+                }
+            }
+            return 0;
         }
     }
 }

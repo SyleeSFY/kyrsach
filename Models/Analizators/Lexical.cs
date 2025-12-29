@@ -308,8 +308,14 @@ namespace compiler_prog
 
         private bool IsLetterAlphabet(char symbol)
         {
+            // Проверяем латинские буквы
             symbol = char.ToLower(symbol);
-            return symbol >= 'a' && symbol <= 'z';
+            bool isLatin = symbol >= 'a' && symbol <= 'z';
+
+            // Проверяем кириллицу
+            bool isCyrillic = (symbol >= 'а' && symbol <= 'я') || symbol == 'ё' || symbol == 'Ё';
+
+            return isLatin || isCyrillic;
         }
 
         public bool LexicalAnalyzerScan(string inputProgrammText)
@@ -318,6 +324,7 @@ namespace compiler_prog
             SetPipeString(inputProgrammText);
             string currentState = "H";
             int lookPosition;
+            bool inStringLiteral = false;
 
             while (currentState != "OUT" && currentState != "ERR")
             {
@@ -333,6 +340,13 @@ namespace compiler_prog
                         else if (char.IsWhiteSpace(currentSymbol))
                         {
                             GetSymbol();
+                        }
+                        else if (currentSymbol == '"')
+                        {
+                            // Начало строкового литерала
+                            AddSymbol(); // Добавляем открывающую кавычку
+                            GetSymbol();
+                            currentState = "STRING";
                         }
                         else if (IsLetterAlphabet(currentSymbol))
                         {
@@ -390,6 +404,35 @@ namespace compiler_prog
                         {
                             lexStatus = "Лексическая ошибка: неизвестный символ алфавита";
                             currentState = "ERR";
+                        }
+                        break;
+
+                    case "STRING":
+                        // Обработка строкового литерала
+                        if (currentSymbol == '⟂')
+                        {
+                            lexStatus = "Лексическая ошибка: незакрытая строковая константа";
+                            currentState = "ERR";
+                        }
+                        else if (currentSymbol == '"')
+                        {
+                            // Закрывающая кавычка
+                            AddSymbol(); // Добавляем закрывающую кавычку
+                            GetSymbol();
+
+                            // Сохраняем строку как константу
+                            BufferToString();
+                            lookPosition = AddToTable(constants);
+                            AddLexem(3, lookPosition, false, bufferString);
+
+                            currentState = "H";
+                        }
+                        else
+                        {
+                            // Добавляем символ в строку
+                            AddSymbol();
+                            GetSymbol();
+                            currentState = "STRING";
                         }
                         break;
 
