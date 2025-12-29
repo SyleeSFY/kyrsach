@@ -273,7 +273,7 @@ namespace compiler_prog
                 code = I1();
                 if (code != 0) return code;
 
-                AddToRulePath("TYPE");
+                AddToRulePath("T");
                 code = TYPE();
                 if (code != 0) return code;
 
