@@ -4,6 +4,6 @@ begin
   pi ass 3.14159;
   radius ass 5.0;
   
-  area ass pi mult radius mult radius;
+  area ass pi plus radius;
   write(area);
 end.

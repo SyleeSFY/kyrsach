@@ -77,7 +77,7 @@ namespace compiler_prog
             {
                 case "plus": return "+";
                 case "minus": return "-";
-                case "mul": return "*";
+                case "mult": return "*";
                 case "div": return "/";
                 default: return op;
             }
@@ -123,7 +123,7 @@ namespace compiler_prog
                     }
                 }
                 else if (item.type == "plus" || item.type == "minus" ||
-                         item.type == "mul" || item.type == "div")
+                         item.type == "mult" || item.type == "div")
                 {
                     if (stack.Count >= 2)
                     {
@@ -303,7 +303,7 @@ namespace compiler_prog
             catch (Exception ex)
             {
                 GeneratedCode.Errors.Add("Ошибка сохранения файла: " + ex.Message);
-                
+
             }
         }
     }
