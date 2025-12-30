@@ -67,16 +67,17 @@
     <Compile Include="compiler.Designer.cs">
       <DependentUpon>compiler.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\Analizators\Semantic.cs" />
     <Compile Include="Models\CodeGenerator.cs" />
-    <Compile Include="Models\CompilerData.cs" />
+    <Compile Include="Models\Data.cs" />
     <Compile Include="Models\FileWork.cs" />
-    <Compile Include="Models\GeneratedCode.cs" />
-    <Compile Include="Models\Struct\LexemStruct.cs" />
-    <Compile Include="Models\LexicalAnalyzer.cs" />
-    <Compile Include="Models\Struct\PolizStruct.cs" />
+    <Compile Include="Models\Generator.cs" />
+    <Compile Include="Models\Struct\Lexem.cs" />
+    <Compile Include="Models\Analizators\Lexical.cs" />
+    <Compile Include="Models\Struct\Poliz.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Models\SyntaxAnalyzer.cs" />
+    <Compile Include="Models\Analizators\Syntax.cs" />
     <EmbeddedResource Include="compiler.resx">
       <DependentUpon>compiler.cs</DependentUpon>
     </EmbeddedResource>

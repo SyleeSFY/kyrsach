@@ -9,24 +9,24 @@ namespace compiler_prog
 {
     public class CodeGenerator
     {
-        private SyntaxAnalyzer _syntaxAnalyzer;
-        private List<LexemStruct> _tid;
+        private Syntax _syntaxAnalyzer;
+        private List<Lexem> _tid;
         private List<string> _constants;
-        private PolizStruct[] _poliz;
+        private Poliz[] _poliz;
         private int _polizLength;
 
-        public GeneratedCode GeneratedCode { get; private set; }
+        public Generator GeneratedCode { get; private set; }
         public TargetLanguage TargetLanguage { get; set; }
 
-        public CodeGenerator(SyntaxAnalyzer syntaxAnalyzer, List<LexemStruct> tid,
-            List<string> constants, PolizStruct[] poliz, int polizLength)
+        public CodeGenerator(Syntax syntaxAnalyzer, List<Lexem> tid,
+            List<string> constants, Poliz[] poliz, int polizLength)
         {
             _syntaxAnalyzer = syntaxAnalyzer;
             _tid = tid;
             _constants = constants;
             _poliz = poliz;
             _polizLength = polizLength;
-            GeneratedCode = new GeneratedCode();
+            GeneratedCode = new Generator();
             TargetLanguage = TargetLanguage.CSharp;
         }
 
@@ -37,7 +37,7 @@ namespace compiler_prog
             return $"var_{tidIndex}";
         }
 
-        private string GetOperandValue(PolizStruct item)
+        private string GetOperandValue(Poliz item)
         {
             if (item.classValue == 4) return GetVariableName(item.value);
             if (item.classValue == 3)
@@ -77,7 +77,7 @@ namespace compiler_prog
             {
                 case "plus": return "+";
                 case "minus": return "-";
-                case "mul": return "*";
+                case "mult": return "*";
                 case "div": return "/";
                 default: return op;
             }
@@ -97,7 +97,7 @@ namespace compiler_prog
             }
         }
 
-        private void ProcessPolizItem(PolizStruct item, List<string> instructions, Stack<string> stack)
+        private void ProcessPolizItem(Poliz item, List<string> instructions, Stack<string> stack)
         {
             if (item.classValue == 3 || item.classValue == 4)
             {
@@ -123,7 +123,7 @@ namespace compiler_prog
                     }
                 }
                 else if (item.type == "plus" || item.type == "minus" ||
-                         item.type == "mul" || item.type == "div")
+                         item.type == "mult" || item.type == "div")
                 {
                     if (stack.Count >= 2)
                     {
@@ -247,9 +247,9 @@ namespace compiler_prog
             return instructions;
         }
 
-        public GeneratedCode GenerateCSharpCode()
+        public Generator GenerateCSharpCode()
         {
-            GeneratedCode = new GeneratedCode();
+            GeneratedCode = new Generator();
             try
             {
                 var sb = new StringBuilder();
@@ -289,7 +289,7 @@ namespace compiler_prog
             }
         }
 
-        public GeneratedCode GenerateCode()
+        public Generator GenerateCode()
         {
             return TargetLanguage == TargetLanguage.CSharp ? GenerateCSharpCode() : GenerateCSharpCode();
         }
@@ -303,7 +303,7 @@ namespace compiler_prog
             catch (Exception ex)
             {
                 GeneratedCode.Errors.Add("Ошибка сохранения файла: " + ex.Message);
-                
+
             }
         }
     }

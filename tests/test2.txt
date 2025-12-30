@@ -1,13 +1,12 @@
 program
 i, sum : %;
 begin
-  sum ass 0
+  sum ass 0;
   
   for i ass 1 to 5 do
-
-      sum ass sum plus i 
-      @ write(i) 
-      @ write(sum)
+      sum ass sum plus i @ 
+      write(i) @
+      write(sum);
   
-  write(sum)
+  write(sum);
 end.
